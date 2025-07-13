@@ -39,7 +39,7 @@
             복수의 차량을 효율적으로 관리하고, 만료일 알림과 사고 기록을 체계적으로 관리하세요!
           </p>
           <div class="hero-buttons">
-            <a href="dashboard.html" class="btn btn-primary btn-lg">
+            <a href="#" class="btn btn-primary btn-lg" onclick="showAuthModal(event)">
               🚀 시작하기
             </a>
             <a href="#features" class="btn btn-secondary btn-lg">
@@ -162,6 +162,50 @@
       <p>Australia NSW 차량관리 전문 앱</p>
     </div>
   </footer>
+
+  <!-- 로그인/회원가입 모달 -->
+  <div id="auth-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="auth-modal-title">로그인</h2>
+        <button class="modal-close" onclick="closeAuthModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="auth-tabs">
+          <button id="login-tab" class="auth-tab active" onclick="showLoginForm()">로그인</button>
+          <button id="signup-tab" class="auth-tab" onclick="showSignupForm()">회원가입</button>
+        </div>
+        <form id="login-form">
+          <input type="email" id="login-email" placeholder="이메일" required>
+          <input type="password" id="login-password" placeholder="비밀번호" required>
+          <button type="submit" class="btn btn-primary btn-full">이메일로 로그인</button>
+          <button type="button" class="btn btn-google btn-full" onclick="signInWithGoogle()">
+            <span>🔍</span> Google로 로그인
+          </button>
+        </form>
+        <form id="signup-form" class="hidden">
+          <input type="text" id="signup-nickname" placeholder="별명" required>
+          <input type="email" id="signup-email" placeholder="이메일" required>
+          <input type="password" id="signup-password" placeholder="비밀번호" required>
+          <button type="submit" class="btn btn-primary btn-full">회원가입</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .modal-overlay { position: fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center; z-index:9999; }
+    .modal-content { background:#fff; border-radius:1rem; padding:2rem; min-width:320px; max-width:90vw; box-shadow:0 8px 32px rgba(0,0,0,0.15); }
+    .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; }
+    .modal-close { background:none; border:none; font-size:1.5rem; cursor:pointer; }
+    .auth-tabs { display:flex; gap:1rem; margin-bottom:1rem; }
+    .auth-tab { flex:1; padding:0.5rem; cursor:pointer; background:none; border:none; font-size:1rem; border-bottom:2px solid transparent; }
+    .auth-tab.active { font-weight:bold; border-bottom:2px solid #2563eb; }
+    .btn-full { width:100%; margin-top:0.5rem; }
+    .btn-google { background:#fff; color:#2563eb; border:1px solid #2563eb; font-weight:600; padding:0.75rem 1.5rem; border-radius:0.5rem; cursor:pointer; margin-bottom:1rem; }
+    .btn-google:hover { background:#2563eb; color:#fff; }
+    .hidden { display:none; }
+  </style>
 
   <script src="script.js" type="module"></script>
 </body>

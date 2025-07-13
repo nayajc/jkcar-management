@@ -279,6 +279,44 @@
           document.getElementById('user-email').textContent = user.email;
           document.getElementById('user-created').textContent = formatDate(user.createdAt);
           document.getElementById('user-last-login').textContent = formatDate(user.lastLogin);
+        } else {
+          // 사용자가 로그인되어 있지 않은 경우
+          document.getElementById('user-email').textContent = '로그인 또는 회원가입이 필요합니다';
+          document.getElementById('user-created').textContent = '';
+          document.getElementById('user-last-login').textContent = '';
+          // 프로필 영역에 로그인/회원가입 버튼 추가
+          const userInfoSection = document.querySelector('.user-info-section');
+          const newContent = `
+            <div class="user-avatar">
+              <div class="avatar-placeholder">
+                <span class="avatar-icon">👤</span>
+              </div>
+            </div>
+            <div class="user-details">
+              <div class="detail-item">
+                <span class="detail-label">별명:</span>
+                <span class="detail-value user-nickname">사용자</span>
+                <button class="btn btn-sm btn-secondary" onclick="editNickname()">수정</button>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">이메일:</span>
+                <span class="detail-value" id="user-email">로그인 또는 회원가입이 필요합니다</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">가입일:</span>
+                <span class="detail-value" id="user-created">로그인 또는 회원가입이 필요합니다</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">마지막 로그인:</span>
+                <span class="detail-value" id="user-last-login">로그인 또는 회원가입이 필요합니다</span>
+              </div>
+            </div>
+            <div class="profile-actions">
+              <button class="btn btn-primary" onclick="showAuthModal('login')">로그인</button>
+              <button class="btn btn-secondary" onclick="showAuthModal('signup')">회원가입</button>
+            </div>
+          `;
+          userInfoSection.innerHTML = newContent;
         }
       })
       .withFailureHandler(function(error) {
