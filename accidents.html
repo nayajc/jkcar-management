@@ -37,9 +37,9 @@
               <p>사고 발생 시 상세한 정보와 사진을 기록하여 체계적으로 관리하세요.</p>
             </div>
             <div class="page-header-actions">
-              <button class="btn btn-warning" onclick="showAddAccidentModal()">
+              <a href="add-accident.html" class="btn btn-warning">
                 📝 새 사고 기록
-              </button>
+              </a>
             </div>
           </div>
         </div>
@@ -124,9 +124,9 @@
           <div class="mb-4">📝</div>
           <h3>등록된 사고 기록이 없습니다</h3>
           <p class="text-gray-600 mb-4">첫 번째 사고 기록을 등록해보세요.</p>
-          <button class="btn btn-warning" onclick="showAddAccidentModal()">
+          <a href="add-accident.html" class="btn btn-warning">
             사고 기록하기
-          </button>
+          </a>
         </div>
       `;
       return;
@@ -158,12 +158,12 @@
           </div>
         </div>
         <div class="accident-actions">
-          <button class="btn btn-sm btn-primary" onclick="viewAccidentDetails('${accident.id}')">
+          <a href="accident-details.html?id=${accident.id}" class="btn btn-sm btn-primary">
             👁️ 상세보기
-          </button>
-          <button class="btn btn-sm btn-secondary" onclick="editAccident('${accident.id}')">
+          </a>
+          <a href="edit-accident.html?id=${accident.id}" class="btn btn-sm btn-secondary">
             ✏️ 수정
-          </button>
+          </a>
           <button class="btn btn-sm btn-error" onclick="deleteAccident('${accident.id}')">
             🗑️ 삭제
           </button>
@@ -203,337 +203,23 @@
     document.getElementById('pending').textContent = pending;
   }
 
-  // 새 사고 기록 모달 표시
-  function showAddAccidentModal() {
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-      <div class="modal-content modal-large">
-        <div class="modal-header">
-          <h2>📝 새 사고 기록</h2>
-          <button class="modal-close" onclick="closeModal()">&times;</button>
-        </div>
-        <div class="modal-body">
-          <form id="accident-form">
-            <div class="form-section">
-              <h3>🚗 차량 정보</h3>
-              <div class="grid grid-2">
-                <div class="form-group">
-                  <label for="vehiclePlate" class="form-label">차량 번호판 *</label>
-                  <select id="vehiclePlate" class="form-input" required>
-                    <option value="">차량 선택</option>
-                    ${vehicles.map(v => `<option value="${v.plateNumber}">${v.plateNumber} - ${v.make} ${v.model}</option>`).join('')}
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label for="accidentDate" class="form-label">사고 발생일 *</label>
-                  <input type="datetime-local" id="accidentDate" class="form-input" required>
-                </div>
-              </div>
-            </div>
-
-            <div class="form-section">
-              <h3>📋 사고 정보</h3>
-              <div class="grid grid-2">
-                <div class="form-group">
-                  <label for="accidentType" class="form-label">사고 유형 *</label>
-                  <select id="accidentType" class="form-input" required>
-                    <option value="">사고 유형 선택</option>
-                    <option value="접촉사고">접촉사고</option>
-                    <option value="추돌사고">추돌사고</option>
-                    <option value="측면충돌">측면충돌</option>
-                    <option value="후방충돌">후방충돌</option>
-                    <option value="보행자사고">보행자사고</option>
-                    <option value="기타">기타</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label for="severity" class="form-label">사고 심각도</label>
-                  <select id="severity" class="form-input">
-                    <option value="경미">경미</option>
-                    <option value="보통">보통</option>
-                    <option value="심각">심각</option>
-                    <option value="치명적">치명적</option>
-                  </select>
-                </div>
-              </div>
-              <div class="form-group">
-                <label for="description" class="form-label">사고 상세 설명</label>
-                <textarea id="description" class="form-textarea" placeholder="사고 발생 상황을 자세히 설명해주세요..."></textarea>
-              </div>
-            </div>
-
-            <div class="form-section">
-              <h3>📍 위치 정보</h3>
-              <div class="form-group">
-                <label for="location" class="form-label">사고 발생 장소 *</label>
-                <input type="text" id="location" class="form-input" placeholder="주소 또는 장소명" required>
-              </div>
-              <div class="form-group">
-                <button type="button" class="btn btn-secondary" onclick="getCurrentLocationForAccident()">
-                  📍 현재 위치 가져오기
-                </button>
-              </div>
-            </div>
-
-            <div class="form-section">
-              <h3>👤 상대방 정보</h3>
-              <div class="grid grid-2">
-                <div class="form-group">
-                  <label for="otherDriverName" class="form-label">상대방 운전자 이름</label>
-                  <input type="text" id="otherDriverName" class="form-input">
-                </div>
-                <div class="form-group">
-                  <label for="otherDriverPhone" class="form-label">상대방 연락처</label>
-                  <input type="tel" id="otherDriverPhone" class="form-input">
-                </div>
-                <div class="form-group">
-                  <label for="otherDriverLicense" class="form-label">상대방 면허번호</label>
-                  <input type="text" id="otherDriverLicense" class="form-input">
-                </div>
-                <div class="form-group">
-                  <label for="otherVehiclePlate" class="form-label">상대방 차량번호</label>
-                  <input type="text" id="otherVehiclePlate" class="form-input">
-                </div>
-              </div>
-            </div>
-
-            <div class="form-section">
-              <h3>📸 사진 업로드</h3>
-              <div class="photo-upload-grid">
-                <div class="photo-upload-item">
-                  <label for="myVehiclePhoto" class="photo-upload-label">
-                    <div class="photo-upload-box">
-                      <span>🚗</span>
-                      <p>내 차량 사진</p>
-                    </div>
-                  </label>
-                  <input type="file" id="myVehiclePhoto" class="photo-upload-input" accept="image/*" onchange="previewImage(this, 'myVehiclePreview')">
-                  <div id="myVehiclePreview" class="photo-preview"></div>
-                </div>
-                <div class="photo-upload-item">
-                  <label for="otherVehiclePhoto" class="photo-upload-label">
-                    <div class="photo-upload-box">
-                      <span>🚙</span>
-                      <p>상대방 차량 사진</p>
-                    </div>
-                  </label>
-                  <input type="file" id="otherVehiclePhoto" class="photo-upload-input" accept="image/*" onchange="previewImage(this, 'otherVehiclePreview')">
-                  <div id="otherVehiclePreview" class="photo-preview"></div>
-                </div>
-                <div class="photo-upload-item">
-                  <label for="accidentScenePhoto" class="photo-upload-label">
-                    <div class="photo-upload-box">
-                      <span>📍</span>
-                      <p>사고 현장 사진</p>
-                    </div>
-                  </label>
-                  <input type="file" id="accidentScenePhoto" class="photo-upload-input" accept="image/*" onchange="previewImage(this, 'accidentScenePreview')">
-                  <div id="accidentScenePreview" class="photo-preview"></div>
-                </div>
-                <div class="photo-upload-item">
-                  <label for="driverLicensePhoto" class="photo-upload-label">
-                    <div class="photo-upload-box">
-                      <span>🪪</span>
-                      <p>운전면허증 사진</p>
-                    </div>
-                  </label>
-                  <input type="file" id="driverLicensePhoto" class="photo-upload-input" accept="image/*" onchange="previewImage(this, 'driverLicensePreview')">
-                  <div id="driverLicensePreview" class="photo-preview"></div>
-                </div>
-              </div>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" onclick="closeModal()">취소</button>
-          <button class="btn btn-warning" onclick="saveAccident()">
-            <span class="loading hidden"></span>
-            사고 기록 저장
-          </button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-  }
-
-  // 현재 위치 가져오기
-  function getCurrentLocationForAccident() {
-    getCurrentLocation(function(location) {
-      if (location) {
-        // 실제로는 Google Maps Geocoding API를 사용하여 주소 변환
-        document.getElementById('location').value = `${location.lat}, ${location.lng}`;
-        showAlert('현재 위치가 입력되었습니다.', 'success');
-      } else {
-        showAlert('위치 정보를 가져올 수 없습니다.', 'error');
-      }
-    });
-  }
-
-  // 이미지 미리보기
-  function previewImage(input, previewId) {
-    const preview = document.getElementById(previewId);
-    const file = input.files[0];
-    
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        preview.innerHTML = `
-          <img src="${e.target.result}" alt="미리보기" style="max-width: 100%; height: auto; border-radius: 0.5rem;">
-          <button type="button" class="btn btn-sm btn-error" onclick="removeImage('${input.id}', '${previewId}')" style="margin-top: 0.5rem;">
-            삭제
-          </button>
-        `;
-      };
-      reader.readAsDataURL(file);
+  // 사고 삭제
+  function deleteAccident(accidentId) {
+    if (confirm('정말로 이 사고 기록을 삭제하시겠습니까?')) {
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (result.success) {
+            showAlert('사고 기록이 삭제되었습니다.', 'success');
+            loadAccidents();
+          } else {
+            showAlert(result.message, 'error');
+          }
+        })
+        .withFailureHandler(function(error) {
+          showAlert('삭제에 실패했습니다.', 'error');
+        })
+        .deleteAccident(accidentId);
     }
-  }
-
-  // 이미지 제거
-  function removeImage(inputId, previewId) {
-    document.getElementById(inputId).value = '';
-    document.getElementById(previewId).innerHTML = '';
-  }
-
-  // 사고 기록 저장
-  function saveAccident() {
-    const accidentData = {
-      vehiclePlate: document.getElementById('vehiclePlate').value,
-      accidentDate: document.getElementById('accidentDate').value,
-      accidentType: document.getElementById('accidentType').value,
-      severity: document.getElementById('severity').value,
-      description: document.getElementById('description').value,
-      location: document.getElementById('location').value,
-      otherDriverName: document.getElementById('otherDriverName').value,
-      otherDriverPhone: document.getElementById('otherDriverPhone').value,
-      otherDriverLicense: document.getElementById('otherDriverLicense').value,
-      otherVehiclePlate: document.getElementById('otherVehiclePlate').value,
-      status: 'pending',
-      photos: {
-        myVehicle: document.getElementById('myVehiclePhoto').files[0],
-        otherVehicle: document.getElementById('otherVehiclePhoto').files[0],
-        accidentScene: document.getElementById('accidentScenePhoto').files[0],
-        driverLicense: document.getElementById('driverLicensePhoto').files[0]
-      }
-    };
-
-    if (!accidentData.vehiclePlate || !accidentData.accidentDate || !accidentData.accidentType || !accidentData.location) {
-      showAlert('필수 항목을 모두 입력해주세요.', 'error');
-      return;
-    }
-
-    const button = document.querySelector('.modal-footer .btn-warning');
-    const loading = button.querySelector('.loading');
-    
-    button.disabled = true;
-    loading.classList.remove('hidden');
-
-    // 실제로는 Firebase Storage에 이미지 업로드 후 URL 저장
-    google.script.run
-      .withSuccessHandler(function(result) {
-        if (result.success) {
-          showAlert('사고 기록이 저장되었습니다! 📝', 'success');
-          closeModal();
-          loadAccidents();
-        } else {
-          showAlert(result.message, 'error');
-        }
-      })
-      .withFailureHandler(function(error) {
-        showAlert('저장에 실패했습니다.', 'error');
-      })
-      .withFinally(function() {
-        button.disabled = false;
-        loading.classList.add('hidden');
-      })
-      .saveAccident(accidentData);
-  }
-
-  // 사고 상세보기
-  function viewAccidentDetails(accidentId) {
-    const accident = accidents.find(a => a.id === accidentId);
-    if (!accident) {
-      showAlert('사고 기록을 찾을 수 없습니다.', 'error');
-      return;
-    }
-
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-      <div class="modal-content modal-large">
-        <div class="modal-header">
-          <h2>📝 사고 상세정보</h2>
-          <button class="modal-close" onclick="closeModal()">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="accident-detail-grid">
-            <div class="detail-section">
-              <h3>🚗 차량 정보</h3>
-              <div class="detail-item">
-                <span class="detail-label">차량 번호판:</span>
-                <span class="detail-value">${accident.vehiclePlate}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">사고 발생일:</span>
-                <span class="detail-value">${formatDate(accident.accidentDate)}</span>
-              </div>
-            </div>
-            <div class="detail-section">
-              <h3>📋 사고 정보</h3>
-              <div class="detail-item">
-                <span class="detail-label">사고 유형:</span>
-                <span class="detail-value">${accident.accidentType}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">심각도:</span>
-                <span class="detail-value">${accident.severity}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">상태:</span>
-                <span class="detail-value status-${accident.status}">${getStatusText(accident.status)}</span>
-              </div>
-            </div>
-            <div class="detail-section">
-              <h3>📍 위치 정보</h3>
-              <div class="detail-item">
-                <span class="detail-label">사고 장소:</span>
-                <span class="detail-value">${accident.location}</span>
-              </div>
-            </div>
-            <div class="detail-section">
-              <h3>👤 상대방 정보</h3>
-              <div class="detail-item">
-                <span class="detail-label">이름:</span>
-                <span class="detail-value">${accident.otherDriverName || '정보 없음'}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">연락처:</span>
-                <span class="detail-value">${accident.otherDriverPhone || '정보 없음'}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">면허번호:</span>
-                <span class="detail-value">${accident.otherDriverLicense || '정보 없음'}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">차량번호:</span>
-                <span class="detail-value">${accident.otherVehiclePlate || '정보 없음'}</span>
-              </div>
-            </div>
-          </div>
-          ${accident.description ? `
-            <div class="detail-section">
-              <h3>📝 상세 설명</h3>
-              <p>${accident.description}</p>
-            </div>
-          ` : ''}
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" onclick="closeModal()">닫기</button>
-          <button class="btn btn-primary" onclick="editAccident('${accidentId}')">수정하기</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
   }
 
   // 페이지 로드 시 사고 목록 로드

@@ -37,9 +37,9 @@
               <p>정비 일정을 관리하고 정비 내역을 체계적으로 기록하세요.</p>
             </div>
             <div class="page-header-actions">
-              <button class="btn btn-success" onclick="showAddMaintenanceModal()">
+              <a href="add-maintenance.html" class="btn btn-success">
                 🔧 새 정비 기록
-              </button>
+              </a>
             </div>
           </div>
         </div>
@@ -75,33 +75,33 @@
             <div class="quick-action-icon">🛢️</div>
             <h3>오일 교환</h3>
             <p>엔진 오일 교환</p>
-            <button class="btn btn-primary btn-sm" onclick="quickMaintenance('오일교환')">
+            <a href="add-maintenance.html?type=오일교환" class="btn btn-primary btn-sm">
               기록하기
-            </button>
+            </a>
           </div>
           <div class="quick-action-card card text-center">
             <div class="quick-action-icon">🛞</div>
             <h3>타이어 교체</h3>
             <p>타이어 교체/점검</p>
-            <button class="btn btn-primary btn-sm" onclick="quickMaintenance('타이어교체')">
+            <a href="add-maintenance.html?type=타이어교체" class="btn btn-primary btn-sm">
               기록하기
-            </button>
+            </a>
           </div>
           <div class="quick-action-card card text-center">
             <div class="quick-action-icon">🛑</div>
             <h3>브레이크 점검</h3>
             <p>브레이크 패드 점검</p>
-            <button class="btn btn-primary btn-sm" onclick="quickMaintenance('브레이크점검')">
+            <a href="add-maintenance.html?type=브레이크점검" class="btn btn-primary btn-sm">
               기록하기
-            </button>
+            </a>
           </div>
           <div class="quick-action-card card text-center">
             <div class="quick-action-icon">🔋</div>
             <h3>배터리 점검</h3>
             <p>배터리 상태 점검</p>
-            <button class="btn btn-primary btn-sm" onclick="quickMaintenance('배터리점검')">
+            <a href="add-maintenance.html?type=배터리점검" class="btn btn-primary btn-sm">
               기록하기
-            </button>
+            </a>
           </div>
         </div>
       </section>
@@ -177,9 +177,9 @@
           <div class="mb-4">🔧</div>
           <h3>등록된 정비 기록이 없습니다</h3>
           <p class="text-gray-600 mb-4">첫 번째 정비 기록을 등록해보세요.</p>
-          <button class="btn btn-success" onclick="showAddMaintenanceModal()">
+          <a href="add-maintenance.html" class="btn btn-success">
             정비 기록하기
-          </button>
+          </a>
         </div>
       `;
       return;
@@ -211,12 +211,12 @@
           </div>
         </div>
         <div class="maintenance-actions">
-          <button class="btn btn-sm btn-primary" onclick="viewMaintenanceDetails('${m.id}')">
-            👁️ 상세보기
-          </button>
-          <button class="btn btn-sm btn-secondary" onclick="editMaintenance('${m.id}')">
+          <a href="maintenance-details.html?id=${m.id}" class="btn btn-sm btn-primary">
+            ��️ 상세보기
+          </a>
+          <a href="edit-maintenance.html?id=${m.id}" class="btn btn-sm btn-secondary">
             ✏️ 수정
-          </button>
+          </a>
           <button class="btn btn-sm btn-error" onclick="deleteMaintenance('${m.id}')">
             🗑️ 삭제
           </button>
@@ -293,12 +293,12 @@
               </span>
             </div>
             <div class="schedule-actions">
-              <button class="btn btn-sm btn-success" onclick="markMaintenanceComplete('${m.id}')">
+              <a href="maintenance-details.html?id=${m.id}" class="btn btn-sm btn-success">
                 완료
-              </button>
-              <button class="btn btn-sm btn-secondary" onclick="rescheduleMaintenance('${m.id}')">
+              </a>
+              <a href="maintenance-details.html?id=${m.id}&reschedule=true" class="btn btn-sm btn-secondary">
                 연기
-              </button>
+              </a>
             </div>
           </div>
         </div>

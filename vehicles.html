@@ -36,9 +36,9 @@
               <p>등록된 차량들을 관리하고 새로운 차량을 등록하세요.</p>
             </div>
             <div class="page-header-actions">
-              <button class="btn btn-primary" onclick="showAddVehicleModal()">
+              <a href="add-vehicle.html" class="btn btn-primary">
                 🚗 새 차량 등록
-              </button>
+              </a>
             </div>
           </div>
         </div>
@@ -172,15 +172,15 @@
             ${getExpiryStatus(vehicle.greenSlipExpiry, 'Green Slip')}
           </div>
           <div class="vehicle-actions mt-4">
-            <button class="btn btn-sm btn-secondary" onclick="editVehicle('${vehicle.id}')">
+            <a href="edit-vehicle.html?id=${vehicle.id}" class="btn btn-sm btn-secondary">
               ✏️ 수정
-            </button>
+            </a>
             <button class="btn btn-sm btn-error" onclick="deleteVehicle('${vehicle.id}')">
               🗑️ 삭제
             </button>
-            <button class="btn btn-sm btn-primary" onclick="viewVehicleDetails('${vehicle.id}')">
+            <a href="vehicle-details.html?id=${vehicle.id}" class="btn btn-sm btn-primary">
               👁️ 상세보기
-            </button>
+            </a>
           </div>
         </div>
       </div>
@@ -193,127 +193,6 @@
     document.getElementById('filter-status').value = '';
     document.getElementById('filter-fuel').value = '';
     renderVehicles();
-  }
-
-  // 차량 수정
-  function editVehicle(vehicleId) {
-    const vehicle = vehicles.find(v => v.id === vehicleId);
-    if (!vehicle) {
-      showAlert('차량을 찾을 수 없습니다.', 'error');
-      return;
-    }
-
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>✏️ 차량 정보 수정</h2>
-          <button class="modal-close" onclick="closeModal()">&times;</button>
-        </div>
-        <div class="modal-body">
-          <form id="edit-vehicle-form">
-            <div class="grid grid-2">
-              <div class="form-group">
-                <label for="edit-plateNumber" class="form-label">번호판 *</label>
-                <input type="text" id="edit-plateNumber" class="form-input" value="${vehicle.plateNumber}" required>
-              </div>
-              <div class="form-group">
-                <label for="edit-make" class="form-label">제조사 *</label>
-                <input type="text" id="edit-make" class="form-input" value="${vehicle.make}" required>
-              </div>
-              <div class="form-group">
-                <label for="edit-model" class="form-label">모델 *</label>
-                <input type="text" id="edit-model" class="form-input" value="${vehicle.model}" required>
-              </div>
-              <div class="form-group">
-                <label for="edit-year" class="form-label">연도 *</label>
-                <input type="number" id="edit-year" class="form-input" value="${vehicle.year}" min="1900" max="2030" required>
-              </div>
-              <div class="form-group">
-                <label for="edit-color" class="form-label">색상</label>
-                <input type="text" id="edit-color" class="form-input" value="${vehicle.color || ''}">
-              </div>
-              <div class="form-group">
-                <label for="edit-fuelType" class="form-label">연료 타입</label>
-                <select id="edit-fuelType" class="form-input">
-                  <option value="Petrol" ${vehicle.fuelType === 'Petrol' ? 'selected' : ''}>Petrol</option>
-                  <option value="Diesel" ${vehicle.fuelType === 'Diesel' ? 'selected' : ''}>Diesel</option>
-                  <option value="Electric" ${vehicle.fuelType === 'Electric' ? 'selected' : ''}>Electric</option>
-                  <option value="Hybrid" ${vehicle.fuelType === 'Hybrid' ? 'selected' : ''}>Hybrid</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="edit-regoExpiry" class="form-label">Rego 만료일</label>
-                <input type="date" id="edit-regoExpiry" class="form-input" value="${vehicle.regoExpiry || ''}">
-              </div>
-              <div class="form-group">
-                <label for="edit-insuranceExpiry" class="form-label">보험 만료일</label>
-                <input type="date" id="edit-insuranceExpiry" class="form-input" value="${vehicle.insuranceExpiry || ''}">
-              </div>
-              <div class="form-group">
-                <label for="edit-greenSlipExpiry" class="form-label">Green Slip 만료일</label>
-                <input type="date" id="edit-greenSlipExpiry" class="form-input" value="${vehicle.greenSlipExpiry || ''}">
-              </div>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" onclick="closeModal()">취소</button>
-          <button class="btn btn-primary" onclick="updateVehicle('${vehicleId}')">
-            <span class="loading hidden"></span>
-            수정하기
-          </button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-  }
-
-  // 차량 정보 업데이트
-  function updateVehicle(vehicleId) {
-    const vehicleData = {
-      plateNumber: document.getElementById('edit-plateNumber').value,
-      make: document.getElementById('edit-make').value,
-      model: document.getElementById('edit-model').value,
-      year: document.getElementById('edit-year').value,
-      color: document.getElementById('edit-color').value,
-      fuelType: document.getElementById('edit-fuelType').value,
-      regoExpiry: document.getElementById('edit-regoExpiry').value,
-      insuranceExpiry: document.getElementById('edit-insuranceExpiry').value,
-      greenSlipExpiry: document.getElementById('edit-greenSlipExpiry').value
-    };
-
-    if (!vehicleData.plateNumber || !vehicleData.make || !vehicleData.model || !vehicleData.year) {
-      showAlert('필수 항목을 모두 입력해주세요.', 'error');
-      return;
-    }
-
-    const button = document.querySelector('.modal-footer .btn-primary');
-    const loading = button.querySelector('.loading');
-    
-    button.disabled = true;
-    loading.classList.remove('hidden');
-
-    // 실제로는 Firebase에서 업데이트
-    google.script.run
-      .withSuccessHandler(function(result) {
-        if (result.success) {
-          showAlert('차량 정보가 수정되었습니다! ✅', 'success');
-          closeModal();
-          loadVehicles();
-        } else {
-          showAlert(result.message, 'error');
-        }
-      })
-      .withFailureHandler(function(error) {
-        showAlert('수정에 실패했습니다.', 'error');
-      })
-      .withFinally(function() {
-        button.disabled = false;
-        loading.classList.add('hidden');
-      })
-      .updateVehicle(vehicleId, vehicleData);
   }
 
   // 차량 삭제
@@ -405,7 +284,7 @@
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" onclick="closeModal()">닫기</button>
-          <button class="btn btn-primary" onclick="editVehicle('${vehicleId}')">수정하기</button>
+          <a href="edit-vehicle.html?id=${vehicleId}" class="btn btn-primary">수정하기</a>
         </div>
       </div>
     `;
