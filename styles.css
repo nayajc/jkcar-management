@@ -1,4 +1,3 @@
-<style>
 /* Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
@@ -568,5 +567,4 @@ body {
 
 .shadow { box-shadow: var(--shadow); }
 .shadow-lg { box-shadow: var(--shadow-lg); }
-.shadow-xl { box-shadow: var(--shadow-xl); }
-</style> 
+.shadow-xl { box-shadow: var(--shadow-xl); } 
