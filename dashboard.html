@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JKCar Management - 대시보드</title>
+  <?!= include('styles'); ?>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <div class="header-content">
+        <a href="?page=home" class="logo">
+          🚗 JKCar Management
+        </a>
+        <nav class="nav">
+          <a href="?page=dashboard" class="nav-link active">📊 대시보드</a>
+          <a href="?page=vehicles" class="nav-link">🚗 차량관리</a>
+          <a href="?page=accidents" class="nav-link">📝 사고관리</a>
+          <a href="?page=maintenance" class="nav-link">🔧 정비관리</a>
+          <a href="?page=profile" class="nav-link">👤 프로필</a>
+        </nav>
+        <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main">
+    <div class="container">
+      <!-- Welcome Section -->
+      <section class="welcome-section mb-6">
+        <div class="card">
+          <div class="welcome-content">
+            <div class="welcome-text">
+              <h1>안녕하세요, <span class="user-nickname">사용자</span>님! 👋</h1>
+              <p>오늘도 안전한 운전 되세요. 차량 관리 현황을 확인해보세요.</p>
+            </div>
+            <div class="welcome-actions">
+              <button class="btn btn-primary" onclick="showAddVehicleModal()">
+                🚗 새 차량 등록
+              </button>
+              <button class="btn btn-secondary" onclick="window.location.href='?page=accidents'">
+                📝 사고 기록
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Stats Section -->
+      <section class="stats-section mb-6">
+        <h2 class="section-title">📊 차량 현황</h2>
+        <div id="dashboard-stats" class="grid grid-4">
+          <div class="stats-card">
+            <div class="stats-number">0</div>
+            <div class="stats-label">등록된 차량</div>
+          </div>
+          <div class="stats-card">
+            <div class="stats-number">0</div>
+            <div class="stats-label">만료 예정</div>
+          </div>
+          <div class="stats-card">
+            <div class="stats-number">0</div>
+            <div class="stats-label">사고 기록</div>
+          </div>
+          <div class="stats-card">
+            <div class="stats-number">0</div>
+            <div class="stats-label">정비 기록</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quick Actions -->
+      <section class="quick-actions mb-6">
+        <h2 class="section-title">⚡ 빠른 작업</h2>
+        <div class="grid grid-4">
+          <div class="quick-action-card card text-center">
+            <div class="quick-action-icon">🚗</div>
+            <h3>차량 등록</h3>
+            <p>새 차량을 등록하세요</p>
+            <button class="btn btn-primary btn-sm" onclick="showAddVehicleModal()">
+              등록하기
+            </button>
+          </div>
+          <div class="quick-action-card card text-center">
+            <div class="quick-action-icon">📝</div>
+            <h3>사고 기록</h3>
+            <p>사고 정보를 기록하세요</p>
+            <button class="btn btn-warning btn-sm" onclick="showAddAccidentModal()">
+              기록하기
+            </button>
+          </div>
+          <div class="quick-action-card card text-center">
+            <div class="quick-action-icon">🔧</div>
+            <h3>정비 기록</h3>
+            <p>정비 내역을 기록하세요</p>
+            <button class="btn btn-success btn-sm" onclick="showAddMaintenanceModal()">
+              기록하기
+            </button>
+          </div>
+          <div class="quick-action-card card text-center">
+            <div class="quick-action-icon">📅</div>
+            <h3>일정 확인</h3>
+            <p>만료일을 확인하세요</p>
+            <button class="btn btn-secondary btn-sm" onclick="checkExpiryDates()">
+              확인하기
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Recent Vehicles -->
+      <section class="recent-vehicles mb-6">
+        <div class="card-header">
+          <h2 class="section-title">🚗 최근 등록된 차량</h2>
+          <a href="?page=vehicles" class="btn btn-secondary">전체 보기</a>
+        </div>
+        <div id="recent-vehicles-container" class="grid grid-3">
+          <!-- 차량 목록이 여기에 로드됩니다 -->
+        </div>
+      </section>
+
+      <!-- Expiring Soon -->
+      <section class="expiring-soon mb-6">
+        <h2 class="section-title">⚠️ 만료 예정</h2>
+        <div id="expiring-soon-container">
+          <!-- 만료 예정 항목들이 여기에 로드됩니다 -->
+        </div>
+      </section>
+
+      <!-- Recent Activities -->
+      <section class="recent-activities mb-6">
+        <h2 class="section-title">📋 최근 활동</h2>
+        <div class="card">
+          <div id="activities-container">
+            <!-- 활동 내역이 여기에 로드됩니다 -->
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2024 JKCar Management. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <?!= include('script'); ?>
+
+  <script>
+  // 대시보드 전용 함수들
+  function loadDashboardData() {
+    loadVehicles();
+    loadRecentActivities();
+    checkExpiryDates();
+  }
+
+  // 최근 활동 로드
+  function loadRecentActivities() {
+    // 실제로는 Firebase에서 활동 내역을 가져옴
+    const activities = [
+      { type: 'vehicle', action: '차량 등록', description: 'Toyota Camry (ABC-123) 등록', time: '2시간 전' },
+      { type: 'maintenance', action: '정비 완료', description: '오일 교환 완료', time: '1일 전' },
+      { type: 'accident', action: '사고 기록', description: '경미한 접촉사고 기록', time: '3일 전' }
+    ];
+
+    const container = document.getElementById('activities-container');
+    if (container) {
+      container.innerHTML = activities.map(activity => `
+        <div class="activity-item">
+          <div class="activity-icon">
+            ${activity.type === 'vehicle' ? '🚗' : activity.type === 'maintenance' ? '🔧' : '📝'}
+          </div>
+          <div class="activity-content">
+            <div class="activity-title">${activity.action}</div>
+            <div class="activity-description">${activity.description}</div>
+            <div class="activity-time">${activity.time}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+  }
+
+  // 만료 예정 항목 표시
+  function showExpiringItems() {
+    const expiringItems = vehicles.filter(vehicle => {
+      const today = new Date();
+      const regoExpiry = vehicle.regoExpiry ? new Date(vehicle.regoExpiry) : null;
+      const insuranceExpiry = vehicle.insuranceExpiry ? new Date(vehicle.insuranceExpiry) : null;
+      const greenSlipExpiry = vehicle.greenSlipExpiry ? new Date(vehicle.greenSlipExpiry) : null;
+      
+      return (regoExpiry && regoExpiry - today <= 30 * 24 * 60 * 60 * 1000) ||
+             (insuranceExpiry && insuranceExpiry - today <= 30 * 24 * 60 * 60 * 1000) ||
+             (greenSlipExpiry && greenSlipExpiry - today <= 30 * 24 * 60 * 60 * 1000);
+    });
+
+    const container = document.getElementById('expiring-soon-container');
+    if (container) {
+      if (expiringItems.length === 0) {
+        container.innerHTML = `
+          <div class="card text-center">
+            <div class="mb-4">✅</div>
+            <h3>만료 예정인 항목이 없습니다</h3>
+            <p class="text-gray-600">모든 등록증과 보험이 정상입니다!</p>
+          </div>
+        `;
+      } else {
+        container.innerHTML = expiringItems.map(vehicle => {
+          const expiringItems = [];
+          const today = new Date();
+          
+          if (vehicle.regoExpiry) {
+            const regoDate = new Date(vehicle.regoExpiry);
+            const daysUntilExpiry = Math.ceil((regoDate - today) / (1000 * 60 * 60 * 24));
+            if (daysUntilExpiry <= 30) {
+              expiringItems.push({ type: 'Rego', days: daysUntilExpiry, date: vehicle.regoExpiry });
+            }
+          }
+          
+          if (vehicle.insuranceExpiry) {
+            const insuranceDate = new Date(vehicle.insuranceExpiry);
+            const daysUntilExpiry = Math.ceil((insuranceDate - today) / (1000 * 60 * 60 * 24));
+            if (daysUntilExpiry <= 30) {
+              expiringItems.push({ type: '보험', days: daysUntilExpiry, date: vehicle.insuranceExpiry });
+            }
+          }
+          
+          if (vehicle.greenSlipExpiry) {
+            const greenSlipDate = new Date(vehicle.greenSlipExpiry);
+            const daysUntilExpiry = Math.ceil((greenSlipDate - today) / (1000 * 60 * 60 * 24));
+            if (daysUntilExpiry <= 30) {
+              expiringItems.push({ type: 'Green Slip', days: daysUntilExpiry, date: vehicle.greenSlipExpiry });
+            }
+          }
+
+          return expiringItems.map(item => `
+            <div class="card mb-3">
+              <div class="expiring-item">
+                <div class="expiring-icon">⚠️</div>
+                <div class="expiring-content">
+                  <div class="expiring-title">${vehicle.plateNumber} - ${item.type}</div>
+                  <div class="expiring-description">
+                    ${item.days <= 0 ? '오늘 만료' : `${item.days}일 후 만료`} (${formatDate(item.date)})
+                  </div>
+                </div>
+                <div class="expiring-action">
+                  <button class="btn btn-warning btn-sm" onclick="remindLater('${vehicle.id}', '${item.type}')">
+                    나중에 알림
+                  </button>
+                </div>
+              </div>
+            </div>
+          `).join('');
+        }).join('');
+      }
+    }
+  }
+
+  // 나중에 알림
+  function remindLater(vehicleId, itemType) {
+    showAlert(`${itemType} 만료 알림을 7일 후로 연기했습니다.`, 'info');
+  }
+
+  // 사고 기록 모달 표시
+  function showAddAccidentModal() {
+    window.location.href = '?page=accidents';
+  }
+
+  // 정비 기록 모달 표시
+  function showAddMaintenanceModal() {
+    window.location.href = '?page=maintenance';
+  }
+
+  // 페이지 로드 시 대시보드 데이터 로드
+  document.addEventListener('DOMContentLoaded', function() {
+    loadDashboardData();
+  });
+  </script>
+
+  <style>
+  /* Welcome Section */
+  .welcome-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .welcome-text h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin-bottom: 0.5rem;
+  }
+
+  .welcome-text p {
+    color: var(--gray-600);
+    font-size: 1.1rem;
+  }
+
+  .welcome-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  /* Quick Action Cards */
+  .quick-action-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .quick-action-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .quick-action-card h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--gray-800);
+  }
+
+  .quick-action-card p {
+    color: var(--gray-600);
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+  }
+
+  /* Activity Items */
+  .activity-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--gray-200);
+  }
+
+  .activity-item:last-child {
+    border-bottom: none;
+  }
+
+  .activity-icon {
+    font-size: 1.5rem;
+    width: 40px;
+    height: 40px;
+    background: var(--light-blue);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .activity-content {
+    flex: 1;
+  }
+
+  .activity-title {
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 0.25rem;
+  }
+
+  .activity-description {
+    color: var(--gray-600);
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .activity-time {
+    color: var(--gray-400);
+    font-size: 0.75rem;
+  }
+
+  /* Expiring Items */
+  .expiring-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .expiring-icon {
+    font-size: 1.5rem;
+  }
+
+  .expiring-content {
+    flex: 1;
+  }
+
+  .expiring-title {
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 0.25rem;
+  }
+
+  .expiring-description {
+    color: var(--gray-600);
+    font-size: 0.875rem;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .welcome-content {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .welcome-actions {
+      justify-content: center;
+    }
+
+    .quick-action-card {
+      padding: 1.5rem 1rem;
+    }
+
+    .expiring-item {
+      flex-direction: column;
+      text-align: center;
+      gap: 0.5rem;
+    }
+  }
+  </style>
+</body>
+</html> 

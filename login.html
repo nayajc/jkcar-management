@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JKCar Management - 로그인</title>
+  <?!= include('styles'); ?>
+</head>
+<body>
+  <!-- Login Container -->
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-logo">
+          🚗
+        </div>
+        <h1>JKCar Management</h1>
+        <p>Australia NSW 차량관리 앱에 오신 것을 환영합니다!</p>
+      </div>
+
+      <div class="login-content">
+        <div class="login-features">
+          <div class="feature-item">
+            <div class="feature-icon">🚗</div>
+            <div class="feature-text">
+              <h3>차량 관리</h3>
+              <p>복수의 차량을 효율적으로 관리</p>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">📅</div>
+            <div class="feature-text">
+              <h3>만료일 알림</h3>
+              <p>Rego, 보험, Green Slip 만료일 자동 알림</p>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">📝</div>
+            <div class="feature-text">
+              <h3>사고 기록</h3>
+              <p>사고 발생 시 상세한 정보와 사진 기록</p>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">🔧</div>
+            <div class="feature-text">
+              <h3>정비 관리</h3>
+              <p>정비 일정과 이력을 체계적으로 관리</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="login-form">
+          <div class="login-methods">
+            <button class="btn btn-google" onclick="googleLogin()">
+              <span class="google-icon">🔍</span>
+              Google 계정으로 로그인
+            </button>
+            
+            <div class="divider">
+              <span>또는</span>
+            </div>
+            
+            <form id="email-login-form" class="email-form">
+              <div class="form-group">
+                <label for="email" class="form-label">이메일 주소</label>
+                <input type="email" id="email" class="form-input" placeholder="your@email.com" required>
+              </div>
+              <div class="form-group">
+                <label for="password" class="form-label">비밀번호</label>
+                <input type="password" id="password" class="form-input" placeholder="비밀번호" required>
+              </div>
+              <button type="submit" class="btn btn-primary btn-full">
+                이메일로 로그인
+              </button>
+            </form>
+          </div>
+
+          <div class="login-footer">
+            <p>계정이 없으신가요? <a href="#" onclick="showSignupForm()">회원가입</a></p>
+            <p><a href="#" onclick="showForgotPassword()">비밀번호를 잊으셨나요?</a></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Signup Modal -->
+  <div id="signup-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>🎉 회원가입</h2>
+        <button class="modal-close" onclick="closeSignupModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="signup-form">
+          <div class="form-group">
+            <label for="signup-nickname" class="form-label">별명 *</label>
+            <input type="text" id="signup-nickname" class="form-input" placeholder="사용할 별명을 입력하세요" required>
+          </div>
+          <div class="form-group">
+            <label for="signup-email" class="form-label">이메일 주소 *</label>
+            <input type="email" id="signup-email" class="form-input" placeholder="your@email.com" required>
+          </div>
+          <div class="form-group">
+            <label for="signup-password" class="form-label">비밀번호 *</label>
+            <input type="password" id="signup-password" class="form-input" placeholder="8자 이상" required minlength="8">
+          </div>
+          <div class="form-group">
+            <label for="signup-confirm-password" class="form-label">비밀번호 확인 *</label>
+            <input type="password" id="signup-confirm-password" class="form-input" placeholder="비밀번호를 다시 입력하세요" required>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="terms-agreement" required>
+              <span class="checkmark"></span>
+              <span class="checkbox-text">
+                <a href="#" onclick="showTerms()">이용약관</a>과 <a href="#" onclick="showPrivacy()">개인정보처리방침</a>에 동의합니다
+              </span>
+            </label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeSignupModal()">취소</button>
+        <button class="btn btn-primary" onclick="signup()">
+          <span class="loading hidden"></span>
+          회원가입
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Forgot Password Modal -->
+  <div id="forgot-password-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>🔑 비밀번호 찾기</h2>
+        <button class="modal-close" onclick="closeForgotPasswordModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>가입하신 이메일 주소를 입력하시면 비밀번호 재설정 링크를 보내드립니다.</p>
+        <form id="forgot-password-form">
+          <div class="form-group">
+            <label for="forgot-email" class="form-label">이메일 주소</label>
+            <input type="email" id="forgot-email" class="form-input" placeholder="your@email.com" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeForgotPasswordModal()">취소</button>
+        <button class="btn btn-primary" onclick="sendPasswordReset()">
+          <span class="loading hidden"></span>
+          비밀번호 재설정 이메일 보내기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <?!= include('script'); ?>
+
+  <script type="module">
+  // Firebase SDK 임포트
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+  import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+
+  // Firebase 설정
+  const firebaseConfig = {
+    apiKey: "AIzaSyA-BYaIUXgk8szUEuwdmqf8xXdzr8Ss2cs",
+    authDomain: "jkcar-management.firebaseapp.com",
+    databaseURL: "https://jkcar-management-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "jkcar-management",
+    storageBucket: "jkcar-management.firebasestorage.app",
+    messagingSenderId: "158717054066",
+    appId: "1:158717054066:web:c42faad070cde9911d06eb",
+    measurementId: "G-3WRFDYEP1T"
+  };
+
+  // Firebase 초기화
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  // Google 로그인
+  async function googleLogin() {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      console.log('Google 로그인 성공:', result.user);
+      showAlert('로그인 성공! 환영합니다! 🎉', 'success');
+      // 대시보드로 리다이렉트
+      setTimeout(() => {
+        window.location.href = '?page=dashboard';
+      }, 1000);
+    } catch (error) {
+      console.error('Google 로그인 실패:', error);
+      showAlert('로그인에 실패했습니다.', 'error');
+    }
+  }
+
+  // 이메일 로그인
+  function emailLogin(email, password) {
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (result.success) {
+          showAlert('로그인 성공! 환영합니다! 🎉', 'success');
+          setTimeout(() => {
+            window.location.href = '?page=dashboard';
+          }, 1000);
+        } else {
+          showAlert(result.message, 'error');
+        }
+      })
+      .withFailureHandler(function(error) {
+        showAlert('로그인에 실패했습니다.', 'error');
+      })
+      .emailLogin(email, password);
+  }
+
+  // 회원가입 모달 표시
+  function showSignupForm() {
+    document.getElementById('signup-modal').classList.remove('hidden');
+  }
+
+  // 회원가입 모달 닫기
+  function closeSignupModal() {
+    document.getElementById('signup-modal').classList.add('hidden');
+  }
+
+  // 회원가입
+  function signup() {
+    const nickname = document.getElementById('signup-nickname').value.trim();
+    const email = document.getElementById('signup-email').value.trim();
+    const password = document.getElementById('signup-password').value;
+    const confirmPassword = document.getElementById('signup-confirm-password').value;
+    const termsAgreement = document.getElementById('terms-agreement').checked;
+
+    if (!nickname || !email || !password || !confirmPassword) {
+      showAlert('모든 필수 항목을 입력해주세요.', 'error');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      showAlert('비밀번호가 일치하지 않습니다.', 'error');
+      return;
+    }
+
+    if (!termsAgreement) {
+      showAlert('이용약관에 동의해주세요.', 'error');
+      return;
+    }
+
+    const button = document.querySelector('#signup-modal .btn-primary');
+    const loading = button.querySelector('.loading');
+    
+    button.disabled = true;
+    loading.classList.remove('hidden');
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (result.success) {
+          showAlert('회원가입이 완료되었습니다! 🎉', 'success');
+          closeSignupModal();
+          // 자동 로그인
+          emailLogin(email, password);
+        } else {
+          showAlert(result.message, 'error');
+        }
+      })
+      .withFailureHandler(function(error) {
+        showAlert('회원가입에 실패했습니다.', 'error');
+      })
+      .withFinally(function() {
+        button.disabled = false;
+        loading.classList.add('hidden');
+      })
+      .signup(nickname, email, password);
+  }
+
+  // 비밀번호 찾기 모달 표시
+  function showForgotPassword() {
+    document.getElementById('forgot-password-modal').classList.remove('hidden');
+  }
+
+  // 비밀번호 찾기 모달 닫기
+  function closeForgotPasswordModal() {
+    document.getElementById('forgot-password-modal').classList.add('hidden');
+  }
+
+  // 비밀번호 재설정 이메일 보내기
+  function sendPasswordReset() {
+    const email = document.getElementById('forgot-email').value.trim();
+    
+    if (!email) {
+      showAlert('이메일 주소를 입력해주세요.', 'error');
+      return;
+    }
+
+    const button = document.querySelector('#forgot-password-modal .btn-primary');
+    const loading = button.querySelector('.loading');
+    
+    button.disabled = true;
+    loading.classList.remove('hidden');
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (result.success) {
+          showAlert('비밀번호 재설정 이메일이 발송되었습니다.', 'success');
+          closeForgotPasswordModal();
+        } else {
+          showAlert(result.message, 'error');
+        }
+      })
+      .withFailureHandler(function(error) {
+        showAlert('이메일 발송에 실패했습니다.', 'error');
+      })
+      .withFinally(function() {
+        button.disabled = false;
+        loading.classList.add('hidden');
+      })
+      .sendPasswordResetEmail(email);
+  }
+
+  // 이용약관 표시
+  function showTerms() {
+    alert('이용약관 내용이 여기에 표시됩니다.');
+  }
+
+  // 개인정보처리방침 표시
+  function showPrivacy() {
+    alert('개인정보처리방침 내용이 여기에 표시됩니다.');
+  }
+
+  // 이벤트 리스너 등록
+  document.addEventListener('DOMContentLoaded', function() {
+    // 이메일 로그인 폼 제출
+    document.getElementById('email-login-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      
+      if (!email || !password) {
+        showAlert('이메일과 비밀번호를 입력해주세요.', 'error');
+        return;
+      }
+      
+      emailLogin(email, password);
+    });
+
+    // 모달 외부 클릭 시 닫기
+    document.addEventListener('click', function(e) {
+      if (e.target.classList.contains('modal-overlay')) {
+        e.target.classList.add('hidden');
+      }
+    });
+  });
+  </script>
+
+  <style>
+  /* Login Container */
+  .login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
+  }
+
+  .login-card {
+    background: var(--white);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-xl);
+    overflow: hidden;
+    max-width: 1000px;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Login Header */
+  .login-header {
+    background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
+    color: var(--white);
+    padding: 3rem 2rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .login-logo {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+  }
+
+  .login-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+
+  .login-header p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    line-height: 1.6;
+  }
+
+  /* Login Content */
+  .login-content {
+    padding: 3rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  /* Login Features */
+  .login-features {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .feature-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--gray-50);
+    border-radius: 0.5rem;
+  }
+
+  .feature-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+  }
+
+  .feature-text h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 0.25rem;
+  }
+
+  .feature-text p {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    margin: 0;
+  }
+
+  /* Login Form */
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .login-methods {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .btn-google {
+    background: var(--white);
+    color: var(--gray-800);
+    border: 2px solid var(--gray-300);
+    font-weight: 600;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    transition: all 0.2s ease;
+  }
+
+  .btn-google:hover {
+    background: var(--gray-50);
+    border-color: var(--gray-400);
+  }
+
+  .google-icon {
+    font-size: 1.25rem;
+  }
+
+  .divider {
+    text-align: center;
+    position: relative;
+    margin: 1.5rem 0;
+  }
+
+  .divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--gray-300);
+  }
+
+  .divider span {
+    background: var(--white);
+    padding: 0 1rem;
+    color: var(--gray-500);
+    font-size: 0.875rem;
+  }
+
+  .email-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .btn-full {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Login Footer */
+  .login-footer {
+    text-align: center;
+    padding-top: 1rem;
+    border-top: 1px solid var(--gray-200);
+  }
+
+  .login-footer p {
+    margin: 0.5rem 0;
+    font-size: 0.875rem;
+    color: var(--gray-600);
+  }
+
+  .login-footer a {
+    color: var(--primary-blue);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .login-footer a:hover {
+    text-decoration: underline;
+  }
+
+  /* Checkbox */
+  .checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    cursor: pointer;
+  }
+
+  .checkbox-label input[type="checkbox"] {
+    display: none;
+  }
+
+  .checkmark {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--gray-300);
+    border-radius: 3px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    position: relative;
+    transition: all 0.2s ease;
+  }
+
+  .checkbox-label input[type="checkbox"]:checked + .checkmark {
+    background: var(--primary-blue);
+    border-color: var(--primary-blue);
+  }
+
+  .checkbox-label input[type="checkbox"]:checked + .checkmark::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--white);
+    font-size: 12px;
+    font-weight: bold;
+  }
+
+  .checkbox-text {
+    font-size: 0.875rem;
+    color: var(--gray-700);
+    line-height: 1.4;
+  }
+
+  .checkbox-text a {
+    color: var(--primary-blue);
+    text-decoration: none;
+  }
+
+  .checkbox-text a:hover {
+    text-decoration: underline;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .login-card {
+      grid-template-columns: 1fr;
+      max-width: 500px;
+    }
+
+    .login-header {
+      padding: 2rem 1.5rem;
+    }
+
+    .login-content {
+      padding: 2rem 1.5rem;
+    }
+
+    .login-logo {
+      font-size: 3rem;
+    }
+
+    .login-header h1 {
+      font-size: 1.75rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .login-container {
+      padding: 1rem;
+    }
+
+    .feature-item {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .login-header {
+      padding: 1.5rem 1rem;
+    }
+
+    .login-content {
+      padding: 1.5rem 1rem;
+    }
+  }
+  </style>
+</body>
+</html> 

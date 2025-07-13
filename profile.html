@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JKCar Management - 프로필</title>
+  <?!= include('styles'); ?>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <div class="header-content">
+        <a href="?page=home" class="logo">
+          🚗 JKCar Management
+        </a>
+        <nav class="nav">
+          <a href="?page=dashboard" class="nav-link">📊 대시보드</a>
+          <a href="?page=vehicles" class="nav-link">🚗 차량관리</a>
+          <a href="?page=accidents" class="nav-link">📝 사고관리</a>
+          <a href="?page=maintenance" class="nav-link">🔧 정비관리</a>
+          <a href="?page=profile" class="nav-link active">👤 프로필</a>
+        </nav>
+        <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main">
+    <div class="container">
+      <!-- Page Header -->
+      <section class="page-header mb-6">
+        <div class="card">
+          <div class="page-header-content">
+            <div class="page-header-text">
+              <h1>👤 프로필</h1>
+              <p>사용자 정보와 앱 설정을 관리하세요.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Profile Content -->
+      <div class="profile-grid">
+        <!-- User Info -->
+        <section class="user-info-section">
+          <div class="card">
+            <div class="card-header">
+              <h2>👤 사용자 정보</h2>
+            </div>
+            <div class="user-info-content">
+              <div class="user-avatar">
+                <div class="avatar-placeholder">
+                  <span class="avatar-icon">👤</span>
+                </div>
+              </div>
+              <div class="user-details">
+                <div class="detail-item">
+                  <span class="detail-label">별명:</span>
+                  <span class="detail-value user-nickname">사용자</span>
+                  <button class="btn btn-sm btn-secondary" onclick="editNickname()">수정</button>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">이메일:</span>
+                  <span class="detail-value" id="user-email">loading...</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">가입일:</span>
+                  <span class="detail-value" id="user-created">loading...</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">마지막 로그인:</span>
+                  <span class="detail-value" id="user-last-login">loading...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- App Statistics -->
+        <section class="stats-section">
+          <div class="card">
+            <div class="card-header">
+              <h2>📊 앱 사용 통계</h2>
+            </div>
+            <div class="stats-content">
+              <div class="stat-item">
+                <div class="stat-icon">🚗</div>
+                <div class="stat-info">
+                  <div class="stat-number" id="total-vehicles">0</div>
+                  <div class="stat-label">등록된 차량</div>
+                </div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-icon">📝</div>
+                <div class="stat-info">
+                  <div class="stat-number" id="total-accidents">0</div>
+                  <div class="stat-label">사고 기록</div>
+                </div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-icon">🔧</div>
+                <div class="stat-info">
+                  <div class="stat-number" id="total-maintenance">0</div>
+                  <div class="stat-label">정비 기록</div>
+                </div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-icon">📅</div>
+                <div class="stat-info">
+                  <div class="stat-number" id="days-active">0</div>
+                  <div class="stat-label">사용 일수</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Notification Settings -->
+        <section class="settings-section">
+          <div class="card">
+            <div class="card-header">
+              <h2>🔔 알림 설정</h2>
+            </div>
+            <div class="settings-content">
+              <div class="setting-item">
+                <div class="setting-info">
+                  <h3>이메일 알림</h3>
+                  <p>만료일 알림을 이메일로 받습니다</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="email-notifications" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="setting-item">
+                <div class="setting-info">
+                  <h3>만료일 알림</h3>
+                  <p>30일 전부터 만료일 알림을 받습니다</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="expiry-notifications" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="setting-item">
+                <div class="setting-info">
+                  <h3>정비 알림</h3>
+                  <p>정비 일정 알림을 받습니다</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="maintenance-notifications" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="setting-item">
+                <div class="setting-info">
+                  <h3>주간 리포트</h3>
+                  <p>주간 차량 관리 리포트를 받습니다</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="weekly-report">
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- App Settings -->
+        <section class="app-settings-section">
+          <div class="card">
+            <div class="card-header">
+              <h2>⚙️ 앱 설정</h2>
+            </div>
+            <div class="settings-content">
+              <div class="setting-item">
+                <div class="setting-info">
+                  <h3>다크 모드</h3>
+                  <p>어두운 테마를 사용합니다</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="dark-mode">
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="setting-item">
+                <div class="setting-info">
+                  <h3>자동 저장</h3>
+                  <p>입력 중인 내용을 자동으로 저장합니다</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="auto-save" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="setting-item">
+                <div class="setting-info">
+                  <h3>위치 서비스</h3>
+                  <p>사고 발생 시 자동으로 위치를 기록합니다</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="location-service" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Data Management -->
+        <section class="data-section">
+          <div class="card">
+            <div class="card-header">
+              <h2>💾 데이터 관리</h2>
+            </div>
+            <div class="data-content">
+              <div class="data-action">
+                <h3>📤 데이터 내보내기</h3>
+                <p>모든 차량 및 정비 데이터를 CSV 파일로 내보냅니다</p>
+                <button class="btn btn-primary" onclick="exportData()">
+                  데이터 내보내기
+                </button>
+              </div>
+              <div class="data-action">
+                <h3>🗑️ 데이터 삭제</h3>
+                <p>모든 데이터를 영구적으로 삭제합니다 (복구 불가)</p>
+                <button class="btn btn-error" onclick="deleteAllData()">
+                  모든 데이터 삭제
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Account Actions -->
+        <section class="account-section">
+          <div class="card">
+            <div class="card-header">
+              <h2>🔐 계정 관리</h2>
+            </div>
+            <div class="account-content">
+              <div class="account-action">
+                <h3>🔑 비밀번호 변경</h3>
+                <p>Google 계정 비밀번호를 변경합니다</p>
+                <button class="btn btn-secondary" onclick="changePassword()">
+                  비밀번호 변경
+                </button>
+              </div>
+              <div class="account-action">
+                <h3>🚪 로그아웃</h3>
+                <p>현재 세션을 종료합니다</p>
+                <button class="btn btn-secondary" onclick="logout()">
+                  로그아웃
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2024 JKCar Management. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <?!= include('script'); ?>
+
+  <script>
+  // 프로필 데이터 로드
+  function loadProfileData() {
+    // 사용자 정보 로드
+    google.script.run
+      .withSuccessHandler(function(user) {
+        if (user) {
+          document.getElementById('user-email').textContent = user.email;
+          document.getElementById('user-created').textContent = formatDate(user.createdAt);
+          document.getElementById('user-last-login').textContent = formatDate(user.lastLogin);
+        }
+      })
+      .withFailureHandler(function(error) {
+        console.error('사용자 정보 로드 실패:', error);
+      })
+      .getCurrentUser();
+
+    // 통계 데이터 로드
+    updateProfileStats();
+    
+    // 설정 로드
+    loadSettings();
+  }
+
+  // 프로필 통계 업데이트
+  function updateProfileStats() {
+    document.getElementById('total-vehicles').textContent = vehicles.length;
+    document.getElementById('total-accidents').textContent = accidents.length;
+    document.getElementById('total-maintenance').textContent = maintenance.length;
+    
+    // 사용 일수 계산
+    const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    if (userProfile.createdAt) {
+      const created = new Date(userProfile.createdAt);
+      const today = new Date();
+      const daysActive = Math.ceil((today - created) / (1000 * 60 * 60 * 24));
+      document.getElementById('days-active').textContent = daysActive;
+    }
+  }
+
+  // 설정 로드
+  function loadSettings() {
+    const settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+    
+    document.getElementById('email-notifications').checked = settings.emailNotifications !== false;
+    document.getElementById('expiry-notifications').checked = settings.expiryNotifications !== false;
+    document.getElementById('maintenance-notifications').checked = settings.maintenanceNotifications !== false;
+    document.getElementById('weekly-report').checked = settings.weeklyReport || false;
+    document.getElementById('dark-mode').checked = settings.darkMode || false;
+    document.getElementById('auto-save').checked = settings.autoSave !== false;
+    document.getElementById('location-service').checked = settings.locationService !== false;
+  }
+
+  // 설정 저장
+  function saveSettings() {
+    const settings = {
+      emailNotifications: document.getElementById('email-notifications').checked,
+      expiryNotifications: document.getElementById('expiry-notifications').checked,
+      maintenanceNotifications: document.getElementById('maintenance-notifications').checked,
+      weeklyReport: document.getElementById('weekly-report').checked,
+      darkMode: document.getElementById('dark-mode').checked,
+      autoSave: document.getElementById('auto-save').checked,
+      locationService: document.getElementById('location-service').checked
+    };
+    
+    localStorage.setItem('appSettings', JSON.stringify(settings));
+    showAlert('설정이 저장되었습니다.', 'success');
+  }
+
+  // 별명 수정
+  function editNickname() {
+    const currentNickname = document.querySelector('.user-nickname').textContent;
+    const newNickname = prompt('새로운 별명을 입력하세요:', currentNickname);
+    
+    if (newNickname && newNickname.trim() && newNickname !== currentNickname) {
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (result.success) {
+            showAlert('별명이 변경되었습니다!', 'success');
+            document.querySelector('.user-nickname').textContent = newNickname.trim();
+          } else {
+            showAlert(result.message, 'error');
+          }
+        })
+        .withFailureHandler(function(error) {
+          showAlert('별명 변경에 실패했습니다.', 'error');
+        })
+        .saveUserProfile(newNickname.trim());
+    }
+  }
+
+  // 데이터 내보내기
+  function exportData() {
+    const exportData = {
+      vehicles: vehicles,
+      accidents: accidents,
+      maintenance: maintenance,
+      exportDate: new Date().toISOString()
+    };
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+    
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(dataBlob);
+    link.download = `jkcar-data-${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    
+    showAlert('데이터가 내보내기되었습니다.', 'success');
+  }
+
+  // 모든 데이터 삭제
+  function deleteAllData() {
+    if (confirm('정말로 모든 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+      if (confirm('마지막 확인: 모든 차량, 사고, 정비 기록이 영구적으로 삭제됩니다. 계속하시겠습니까?')) {
+        google.script.run
+          .withSuccessHandler(function(result) {
+            if (result.success) {
+              showAlert('모든 데이터가 삭제되었습니다.', 'success');
+              // 페이지 새로고침
+              window.location.reload();
+            } else {
+              showAlert(result.message, 'error');
+            }
+          })
+          .withFailureHandler(function(error) {
+            showAlert('데이터 삭제에 실패했습니다.', 'error');
+          })
+          .deleteAllUserData();
+      }
+    }
+  }
+
+  // 비밀번호 변경
+  function changePassword() {
+    window.open('https://myaccount.google.com/security', '_blank');
+    showAlert('Google 계정 보안 페이지가 열렸습니다.', 'info');
+  }
+
+  // 로그아웃
+  function logout() {
+    if (confirm('로그아웃하시겠습니까?')) {
+      // 로컬 스토리지 클리어
+      localStorage.clear();
+      // 홈페이지로 리다이렉트
+      window.location.href = '?page=home';
+    }
+  }
+
+  // 설정 변경 이벤트 리스너
+  document.addEventListener('DOMContentLoaded', function() {
+    loadProfileData();
+    
+    // 설정 변경 시 자동 저장
+    const settingInputs = document.querySelectorAll('.switch input');
+    settingInputs.forEach(input => {
+      input.addEventListener('change', saveSettings);
+    });
+  });
+  </script>
+
+  <style>
+  /* Profile Grid */
+  .profile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+  }
+
+  /* User Info */
+  .user-info-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 2rem;
+  }
+
+  .user-avatar {
+    flex-shrink: 0;
+  }
+
+  .avatar-placeholder {
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .avatar-icon {
+    font-size: 3rem;
+    color: var(--white);
+  }
+
+  .user-details {
+    flex: 1;
+  }
+
+  .detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--gray-200);
+  }
+
+  .detail-item:last-child {
+    border-bottom: none;
+  }
+
+  .detail-label {
+    font-weight: 500;
+    color: var(--gray-700);
+  }
+
+  .detail-value {
+    color: var(--gray-800);
+    font-weight: 600;
+    margin-right: 1rem;
+  }
+
+  /* Stats */
+  .stats-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--gray-50);
+    border-radius: 0.5rem;
+  }
+
+  .stat-icon {
+    font-size: 2rem;
+  }
+
+  .stat-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-blue);
+  }
+
+  .stat-label {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+  }
+
+  /* Settings */
+  .settings-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--gray-200);
+  }
+
+  .setting-item:last-child {
+    border-bottom: none;
+  }
+
+  .setting-info h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 0.25rem;
+  }
+
+  .setting-info p {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    margin: 0;
+  }
+
+  /* Switch Toggle */
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+  }
+
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--gray-300);
+    transition: 0.3s;
+    border-radius: 24px;
+  }
+
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: var(--white);
+    transition: 0.3s;
+    border-radius: 50%;
+  }
+
+  input:checked + .slider {
+    background-color: var(--primary-blue);
+  }
+
+  input:checked + .slider:before {
+    transform: translateX(26px);
+  }
+
+  /* Data Management */
+  .data-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .data-action {
+    padding: 1.5rem;
+    background: var(--gray-50);
+    border-radius: 0.5rem;
+  }
+
+  .data-action h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 0.5rem;
+  }
+
+  .data-action p {
+    color: var(--gray-600);
+    margin-bottom: 1rem;
+  }
+
+  /* Account Actions */
+  .account-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .account-action {
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--gray-200);
+  }
+
+  .account-action:last-child {
+    border-bottom: none;
+  }
+
+  .account-action h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 0.25rem;
+  }
+
+  .account-action p {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    margin-bottom: 1rem;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .profile-grid {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    .user-info-content {
+      flex-direction: column;
+      text-align: center;
+      gap: 1rem;
+    }
+
+    .stats-content {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .setting-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .data-action {
+      text-align: center;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .stats-content {
+      grid-template-columns: 1fr;
+    }
+
+    .detail-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+  }
+  </style>
+</body>
+</html> 

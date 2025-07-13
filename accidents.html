@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JKCar Management - 사고관리</title>
+  <?!= include('styles'); ?>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <div class="header-content">
+        <a href="?page=home" class="logo">
+          🚗 JKCar Management
+        </a>
+        <nav class="nav">
+          <a href="?page=dashboard" class="nav-link">📊 대시보드</a>
+          <a href="?page=vehicles" class="nav-link">🚗 차량관리</a>
+          <a href="?page=accidents" class="nav-link active">📝 사고관리</a>
+          <a href="?page=maintenance" class="nav-link">🔧 정비관리</a>
+          <a href="?page=profile" class="nav-link">👤 프로필</a>
+        </nav>
+        <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main">
+    <div class="container">
+      <!-- Page Header -->
+      <section class="page-header mb-6">
+        <div class="card">
+          <div class="page-header-content">
+            <div class="page-header-text">
+              <h1>📝 사고 관리</h1>
+              <p>사고 발생 시 상세한 정보와 사진을 기록하여 체계적으로 관리하세요.</p>
+            </div>
+            <div class="page-header-actions">
+              <button class="btn btn-warning" onclick="showAddAccidentModal()">
+                📝 새 사고 기록
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Accident Stats -->
+      <section class="accident-stats mb-6">
+        <div class="grid grid-4">
+          <div class="stats-card">
+            <div class="stats-number" id="total-accidents">0</div>
+            <div class="stats-label">총 사고 건수</div>
+          </div>
+          <div class="stats-card">
+            <div class="stats-number" id="this-year">0</div>
+            <div class="stats-label">올해 사고</div>
+          </div>
+          <div class="stats-card">
+            <div class="stats-number" id="this-month">0</div>
+            <div class="stats-label">이번 달</div>
+          </div>
+          <div class="stats-card">
+            <div class="stats-number" id="pending">0</div>
+            <div class="stats-label">처리 대기</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Accident List -->
+      <section class="accident-list">
+        <div class="card-header">
+          <h2 class="section-title">📋 사고 기록 목록</h2>
+          <div class="list-actions">
+            <select id="filter-status" class="form-input">
+              <option value="">모든 상태</option>
+              <option value="pending">처리 대기</option>
+              <option value="in-progress">처리 중</option>
+              <option value="completed">완료</option>
+            </select>
+            <input type="text" id="search-accidents" class="form-input" placeholder="사고 검색">
+          </div>
+        </div>
+        <div id="accidents-container">
+          <!-- 사고 목록이 여기에 로드됩니다 -->
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2024 JKCar Management. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <?!= include('script'); ?>
+
+  <script>
+  // 사고 목록 로드
+  function loadAccidents() {
+    google.script.run
+      .withSuccessHandler(function(accidentList) {
+        accidents = accidentList;
+        renderAccidents();
+        updateAccidentStats();
+      })
+      .withFailureHandler(function(error) {
+        console.error('사고 목록 로드 실패:', error);
+        showAlert('사고 목록을 불러오는데 실패했습니다.', 'error');
+      })
+      .getAccidents();
+  }
+
+  // 사고 목록 렌더링
+  function renderAccidents() {
+    const container = document.getElementById('accidents-container');
+    if (!container) return;
+
+    if (accidents.length === 0) {
+      container.innerHTML = `
+        <div class="card text-center">
+          <div class="mb-4">📝</div>
+          <h3>등록된 사고 기록이 없습니다</h3>
+          <p class="text-gray-600 mb-4">첫 번째 사고 기록을 등록해보세요.</p>
+          <button class="btn btn-warning" onclick="showAddAccidentModal()">
+            사고 기록하기
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = accidents.map(accident => `
+      <div class="accident-card card mb-4">
+        <div class="accident-header">
+          <div class="accident-info">
+            <h3>${accident.vehiclePlate} - ${accident.accidentType}</h3>
+            <p class="accident-date">${formatDate(accident.accidentDate)}</p>
+          </div>
+          <div class="accident-status">
+            <span class="status-badge status-${accident.status}">${getStatusText(accident.status)}</span>
+          </div>
+        </div>
+        <div class="accident-details">
+          <div class="detail-row">
+            <span class="detail-label">사고 유형:</span>
+            <span class="detail-value">${accident.accidentType}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">사고 장소:</span>
+            <span class="detail-value">${accident.location}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">상대방:</span>
+            <span class="detail-value">${accident.otherDriverName || '정보 없음'}</span>
+          </div>
+        </div>
+        <div class="accident-actions">
+          <button class="btn btn-sm btn-primary" onclick="viewAccidentDetails('${accident.id}')">
+            👁️ 상세보기
+          </button>
+          <button class="btn btn-sm btn-secondary" onclick="editAccident('${accident.id}')">
+            ✏️ 수정
+          </button>
+          <button class="btn btn-sm btn-error" onclick="deleteAccident('${accident.id}')">
+            🗑️ 삭제
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // 상태 텍스트 반환
+  function getStatusText(status) {
+    switch(status) {
+      case 'pending': return '처리 대기';
+      case 'in-progress': return '처리 중';
+      case 'completed': return '완료';
+      default: return '알 수 없음';
+    }
+  }
+
+  // 사고 통계 업데이트
+  function updateAccidentStats() {
+    const total = accidents.length;
+    const thisYear = accidents.filter(a => {
+      const accidentYear = new Date(a.accidentDate).getFullYear();
+      return accidentYear === new Date().getFullYear();
+    }).length;
+    const thisMonth = accidents.filter(a => {
+      const accidentDate = new Date(a.accidentDate);
+      const now = new Date();
+      return accidentDate.getFullYear() === now.getFullYear() && 
+             accidentDate.getMonth() === now.getMonth();
+    }).length;
+    const pending = accidents.filter(a => a.status === 'pending').length;
+
+    document.getElementById('total-accidents').textContent = total;
+    document.getElementById('this-year').textContent = thisYear;
+    document.getElementById('this-month').textContent = thisMonth;
+    document.getElementById('pending').textContent = pending;
+  }
+
+  // 새 사고 기록 모달 표시
+  function showAddAccidentModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h2>📝 새 사고 기록</h2>
+          <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="accident-form">
+            <div class="form-section">
+              <h3>🚗 차량 정보</h3>
+              <div class="grid grid-2">
+                <div class="form-group">
+                  <label for="vehiclePlate" class="form-label">차량 번호판 *</label>
+                  <select id="vehiclePlate" class="form-input" required>
+                    <option value="">차량 선택</option>
+                    ${vehicles.map(v => `<option value="${v.plateNumber}">${v.plateNumber} - ${v.make} ${v.model}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="accidentDate" class="form-label">사고 발생일 *</label>
+                  <input type="datetime-local" id="accidentDate" class="form-input" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>📋 사고 정보</h3>
+              <div class="grid grid-2">
+                <div class="form-group">
+                  <label for="accidentType" class="form-label">사고 유형 *</label>
+                  <select id="accidentType" class="form-input" required>
+                    <option value="">사고 유형 선택</option>
+                    <option value="접촉사고">접촉사고</option>
+                    <option value="추돌사고">추돌사고</option>
+                    <option value="측면충돌">측면충돌</option>
+                    <option value="후방충돌">후방충돌</option>
+                    <option value="보행자사고">보행자사고</option>
+                    <option value="기타">기타</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="severity" class="form-label">사고 심각도</label>
+                  <select id="severity" class="form-input">
+                    <option value="경미">경미</option>
+                    <option value="보통">보통</option>
+                    <option value="심각">심각</option>
+                    <option value="치명적">치명적</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="description" class="form-label">사고 상세 설명</label>
+                <textarea id="description" class="form-textarea" placeholder="사고 발생 상황을 자세히 설명해주세요..."></textarea>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>📍 위치 정보</h3>
+              <div class="form-group">
+                <label for="location" class="form-label">사고 발생 장소 *</label>
+                <input type="text" id="location" class="form-input" placeholder="주소 또는 장소명" required>
+              </div>
+              <div class="form-group">
+                <button type="button" class="btn btn-secondary" onclick="getCurrentLocationForAccident()">
+                  📍 현재 위치 가져오기
+                </button>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>👤 상대방 정보</h3>
+              <div class="grid grid-2">
+                <div class="form-group">
+                  <label for="otherDriverName" class="form-label">상대방 운전자 이름</label>
+                  <input type="text" id="otherDriverName" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label for="otherDriverPhone" class="form-label">상대방 연락처</label>
+                  <input type="tel" id="otherDriverPhone" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label for="otherDriverLicense" class="form-label">상대방 면허번호</label>
+                  <input type="text" id="otherDriverLicense" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label for="otherVehiclePlate" class="form-label">상대방 차량번호</label>
+                  <input type="text" id="otherVehiclePlate" class="form-input">
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>📸 사진 업로드</h3>
+              <div class="photo-upload-grid">
+                <div class="photo-upload-item">
+                  <label for="myVehiclePhoto" class="photo-upload-label">
+                    <div class="photo-upload-box">
+                      <span>🚗</span>
+                      <p>내 차량 사진</p>
+                    </div>
+                  </label>
+                  <input type="file" id="myVehiclePhoto" class="photo-upload-input" accept="image/*" onchange="previewImage(this, 'myVehiclePreview')">
+                  <div id="myVehiclePreview" class="photo-preview"></div>
+                </div>
+                <div class="photo-upload-item">
+                  <label for="otherVehiclePhoto" class="photo-upload-label">
+                    <div class="photo-upload-box">
+                      <span>🚙</span>
+                      <p>상대방 차량 사진</p>
+                    </div>
+                  </label>
+                  <input type="file" id="otherVehiclePhoto" class="photo-upload-input" accept="image/*" onchange="previewImage(this, 'otherVehiclePreview')">
+                  <div id="otherVehiclePreview" class="photo-preview"></div>
+                </div>
+                <div class="photo-upload-item">
+                  <label for="accidentScenePhoto" class="photo-upload-label">
+                    <div class="photo-upload-box">
+                      <span>📍</span>
+                      <p>사고 현장 사진</p>
+                    </div>
+                  </label>
+                  <input type="file" id="accidentScenePhoto" class="photo-upload-input" accept="image/*" onchange="previewImage(this, 'accidentScenePreview')">
+                  <div id="accidentScenePreview" class="photo-preview"></div>
+                </div>
+                <div class="photo-upload-item">
+                  <label for="driverLicensePhoto" class="photo-upload-label">
+                    <div class="photo-upload-box">
+                      <span>🪪</span>
+                      <p>운전면허증 사진</p>
+                    </div>
+                  </label>
+                  <input type="file" id="driverLicensePhoto" class="photo-upload-input" accept="image/*" onchange="previewImage(this, 'driverLicensePreview')">
+                  <div id="driverLicensePreview" class="photo-preview"></div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+          <button class="btn btn-warning" onclick="saveAccident()">
+            <span class="loading hidden"></span>
+            사고 기록 저장
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+
+  // 현재 위치 가져오기
+  function getCurrentLocationForAccident() {
+    getCurrentLocation(function(location) {
+      if (location) {
+        // 실제로는 Google Maps Geocoding API를 사용하여 주소 변환
+        document.getElementById('location').value = `${location.lat}, ${location.lng}`;
+        showAlert('현재 위치가 입력되었습니다.', 'success');
+      } else {
+        showAlert('위치 정보를 가져올 수 없습니다.', 'error');
+      }
+    });
+  }
+
+  // 이미지 미리보기
+  function previewImage(input, previewId) {
+    const preview = document.getElementById(previewId);
+    const file = input.files[0];
+    
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        preview.innerHTML = `
+          <img src="${e.target.result}" alt="미리보기" style="max-width: 100%; height: auto; border-radius: 0.5rem;">
+          <button type="button" class="btn btn-sm btn-error" onclick="removeImage('${input.id}', '${previewId}')" style="margin-top: 0.5rem;">
+            삭제
+          </button>
+        `;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  // 이미지 제거
+  function removeImage(inputId, previewId) {
+    document.getElementById(inputId).value = '';
+    document.getElementById(previewId).innerHTML = '';
+  }
+
+  // 사고 기록 저장
+  function saveAccident() {
+    const accidentData = {
+      vehiclePlate: document.getElementById('vehiclePlate').value,
+      accidentDate: document.getElementById('accidentDate').value,
+      accidentType: document.getElementById('accidentType').value,
+      severity: document.getElementById('severity').value,
+      description: document.getElementById('description').value,
+      location: document.getElementById('location').value,
+      otherDriverName: document.getElementById('otherDriverName').value,
+      otherDriverPhone: document.getElementById('otherDriverPhone').value,
+      otherDriverLicense: document.getElementById('otherDriverLicense').value,
+      otherVehiclePlate: document.getElementById('otherVehiclePlate').value,
+      status: 'pending',
+      photos: {
+        myVehicle: document.getElementById('myVehiclePhoto').files[0],
+        otherVehicle: document.getElementById('otherVehiclePhoto').files[0],
+        accidentScene: document.getElementById('accidentScenePhoto').files[0],
+        driverLicense: document.getElementById('driverLicensePhoto').files[0]
+      }
+    };
+
+    if (!accidentData.vehiclePlate || !accidentData.accidentDate || !accidentData.accidentType || !accidentData.location) {
+      showAlert('필수 항목을 모두 입력해주세요.', 'error');
+      return;
+    }
+
+    const button = document.querySelector('.modal-footer .btn-warning');
+    const loading = button.querySelector('.loading');
+    
+    button.disabled = true;
+    loading.classList.remove('hidden');
+
+    // 실제로는 Firebase Storage에 이미지 업로드 후 URL 저장
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (result.success) {
+          showAlert('사고 기록이 저장되었습니다! 📝', 'success');
+          closeModal();
+          loadAccidents();
+        } else {
+          showAlert(result.message, 'error');
+        }
+      })
+      .withFailureHandler(function(error) {
+        showAlert('저장에 실패했습니다.', 'error');
+      })
+      .withFinally(function() {
+        button.disabled = false;
+        loading.classList.add('hidden');
+      })
+      .saveAccident(accidentData);
+  }
+
+  // 사고 상세보기
+  function viewAccidentDetails(accidentId) {
+    const accident = accidents.find(a => a.id === accidentId);
+    if (!accident) {
+      showAlert('사고 기록을 찾을 수 없습니다.', 'error');
+      return;
+    }
+
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h2>📝 사고 상세정보</h2>
+          <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="accident-detail-grid">
+            <div class="detail-section">
+              <h3>🚗 차량 정보</h3>
+              <div class="detail-item">
+                <span class="detail-label">차량 번호판:</span>
+                <span class="detail-value">${accident.vehiclePlate}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">사고 발생일:</span>
+                <span class="detail-value">${formatDate(accident.accidentDate)}</span>
+              </div>
+            </div>
+            <div class="detail-section">
+              <h3>📋 사고 정보</h3>
+              <div class="detail-item">
+                <span class="detail-label">사고 유형:</span>
+                <span class="detail-value">${accident.accidentType}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">심각도:</span>
+                <span class="detail-value">${accident.severity}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">상태:</span>
+                <span class="detail-value status-${accident.status}">${getStatusText(accident.status)}</span>
+              </div>
+            </div>
+            <div class="detail-section">
+              <h3>📍 위치 정보</h3>
+              <div class="detail-item">
+                <span class="detail-label">사고 장소:</span>
+                <span class="detail-value">${accident.location}</span>
+              </div>
+            </div>
+            <div class="detail-section">
+              <h3>👤 상대방 정보</h3>
+              <div class="detail-item">
+                <span class="detail-label">이름:</span>
+                <span class="detail-value">${accident.otherDriverName || '정보 없음'}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">연락처:</span>
+                <span class="detail-value">${accident.otherDriverPhone || '정보 없음'}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">면허번호:</span>
+                <span class="detail-value">${accident.otherDriverLicense || '정보 없음'}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">차량번호:</span>
+                <span class="detail-value">${accident.otherVehiclePlate || '정보 없음'}</span>
+              </div>
+            </div>
+          </div>
+          ${accident.description ? `
+            <div class="detail-section">
+              <h3>📝 상세 설명</h3>
+              <p>${accident.description}</p>
+            </div>
+          ` : ''}
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeModal()">닫기</button>
+          <button class="btn btn-primary" onclick="editAccident('${accidentId}')">수정하기</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+
+  // 페이지 로드 시 사고 목록 로드
+  document.addEventListener('DOMContentLoaded', function() {
+    loadAccidents();
+  });
+  </script>
+
+  <style>
+  /* Accident Cards */
+  .accident-card {
+    border-left: 4px solid var(--warning);
+  }
+
+  .accident-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
+
+  .accident-info h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 0.25rem;
+  }
+
+  .accident-date {
+    color: var(--gray-600);
+    font-size: 0.875rem;
+  }
+
+  .accident-details {
+    margin-bottom: 1rem;
+  }
+
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--gray-200);
+  }
+
+  .detail-row:last-child {
+    border-bottom: none;
+  }
+
+  .detail-label {
+    font-weight: 500;
+    color: var(--gray-700);
+  }
+
+  .detail-value {
+    color: var(--gray-800);
+    font-weight: 600;
+  }
+
+  .accident-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  /* Form Sections */
+  .form-section {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--gray-200);
+  }
+
+  .form-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+  }
+
+  .form-section h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 1rem;
+  }
+
+  /* Photo Upload */
+  .photo-upload-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .photo-upload-item {
+    text-align: center;
+  }
+
+  .photo-upload-label {
+    cursor: pointer;
+    display: block;
+  }
+
+  .photo-upload-box {
+    border: 2px dashed var(--gray-300);
+    border-radius: 0.5rem;
+    padding: 2rem 1rem;
+    transition: all 0.2s ease;
+  }
+
+  .photo-upload-box:hover {
+    border-color: var(--primary-blue);
+    background: var(--light-blue);
+  }
+
+  .photo-upload-box span {
+    font-size: 2rem;
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+
+  .photo-upload-box p {
+    color: var(--gray-600);
+    font-size: 0.875rem;
+    margin: 0;
+  }
+
+  .photo-upload-input {
+    display: none;
+  }
+
+  .photo-preview {
+    margin-top: 1rem;
+  }
+
+  /* Modal Large */
+  .modal-large {
+    max-width: 800px;
+    width: 90%;
+  }
+
+  /* Accident Detail Grid */
+  .accident-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+  }
+
+  /* Status Colors */
+  .status-pending {
+    color: var(--warning);
+  }
+
+  .status-in-progress {
+    color: var(--primary-blue);
+  }
+
+  .status-completed {
+    color: var(--success);
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .accident-header {
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .accident-actions {
+      justify-content: center;
+    }
+
+    .photo-upload-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .accident-detail-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+  }
+  </style>
+</body>
+</html> 

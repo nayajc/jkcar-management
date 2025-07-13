@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JKCar Management - 정비관리</title>
+  <?!= include('styles'); ?>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <div class="header-content">
+        <a href="?page=home" class="logo">
+          🚗 JKCar Management
+        </a>
+        <nav class="nav">
+          <a href="?page=dashboard" class="nav-link">📊 대시보드</a>
+          <a href="?page=vehicles" class="nav-link">🚗 차량관리</a>
+          <a href="?page=accidents" class="nav-link">📝 사고관리</a>
+          <a href="?page=maintenance" class="nav-link active">🔧 정비관리</a>
+          <a href="?page=profile" class="nav-link">👤 프로필</a>
+        </nav>
+        <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main">
+    <div class="container">
+      <!-- Page Header -->
+      <section class="page-header mb-6">
+        <div class="card">
+          <div class="page-header-content">
+            <div class="page-header-text">
+              <h1>🔧 정비 관리</h1>
+              <p>정비 일정을 관리하고 정비 내역을 체계적으로 기록하세요.</p>
+            </div>
+            <div class="page-header-actions">
+              <button class="btn btn-success" onclick="showAddMaintenanceModal()">
+                🔧 새 정비 기록
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Maintenance Stats -->
+      <section class="maintenance-stats mb-6">
+        <div class="grid grid-4">
+          <div class="stats-card">
+            <div class="stats-number" id="total-maintenance">0</div>
+            <div class="stats-label">총 정비 건수</div>
+          </div>
+          <div class="stats-card">
+            <div class="stats-number" id="this-year">0</div>
+            <div class="stats-label">올해 정비</div>
+          </div>
+          <div class="stats-card">
+            <div class="stats-number" id="upcoming">0</div>
+            <div class="stats-label">예정된 정비</div>
+          </div>
+          <div class="stats-card">
+            <div class="stats-number" id="total-cost">$0</div>
+            <div class="stats-label">총 정비 비용</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quick Maintenance Actions -->
+      <section class="quick-maintenance mb-6">
+        <h2 class="section-title">⚡ 빠른 정비 작업</h2>
+        <div class="grid grid-4">
+          <div class="quick-action-card card text-center">
+            <div class="quick-action-icon">🛢️</div>
+            <h3>오일 교환</h3>
+            <p>엔진 오일 교환</p>
+            <button class="btn btn-primary btn-sm" onclick="quickMaintenance('오일교환')">
+              기록하기
+            </button>
+          </div>
+          <div class="quick-action-card card text-center">
+            <div class="quick-action-icon">🛞</div>
+            <h3>타이어 교체</h3>
+            <p>타이어 교체/점검</p>
+            <button class="btn btn-primary btn-sm" onclick="quickMaintenance('타이어교체')">
+              기록하기
+            </button>
+          </div>
+          <div class="quick-action-card card text-center">
+            <div class="quick-action-icon">🛑</div>
+            <h3>브레이크 점검</h3>
+            <p>브레이크 패드 점검</p>
+            <button class="btn btn-primary btn-sm" onclick="quickMaintenance('브레이크점검')">
+              기록하기
+            </button>
+          </div>
+          <div class="quick-action-card card text-center">
+            <div class="quick-action-icon">🔋</div>
+            <h3>배터리 점검</h3>
+            <p>배터리 상태 점검</p>
+            <button class="btn btn-primary btn-sm" onclick="quickMaintenance('배터리점검')">
+              기록하기
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Maintenance Schedule -->
+      <section class="maintenance-schedule mb-6">
+        <div class="card-header">
+          <h2 class="section-title">📅 정비 일정</h2>
+          <div class="schedule-actions">
+            <select id="filter-vehicle" class="form-input">
+              <option value="">모든 차량</option>
+              ${vehicles.map(v => `<option value="${v.plateNumber}">${v.plateNumber}</option>`).join('')}
+            </select>
+            <select id="filter-type" class="form-input">
+              <option value="">모든 유형</option>
+              <option value="오일교환">오일 교환</option>
+              <option value="타이어교체">타이어 교체</option>
+              <option value="브레이크점검">브레이크 점검</option>
+              <option value="배터리점검">배터리 점검</option>
+              <option value="기타">기타</option>
+            </select>
+          </div>
+        </div>
+        <div id="maintenance-schedule-container">
+          <!-- 정비 일정이 여기에 로드됩니다 -->
+        </div>
+      </section>
+
+      <!-- Maintenance History -->
+      <section class="maintenance-history">
+        <h2 class="section-title">📋 정비 이력</h2>
+        <div id="maintenance-container">
+          <!-- 정비 이력이 여기에 로드됩니다 -->
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2024 JKCar Management. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <?!= include('script'); ?>
+
+  <script>
+  // 정비 목록 로드
+  function loadMaintenance() {
+    google.script.run
+      .withSuccessHandler(function(maintenanceList) {
+        maintenance = maintenanceList;
+        renderMaintenance();
+        updateMaintenanceStats();
+        renderMaintenanceSchedule();
+      })
+      .withFailureHandler(function(error) {
+        console.error('정비 목록 로드 실패:', error);
+        showAlert('정비 목록을 불러오는데 실패했습니다.', 'error');
+      })
+      .getMaintenance();
+  }
+
+  // 정비 목록 렌더링
+  function renderMaintenance() {
+    const container = document.getElementById('maintenance-container');
+    if (!container) return;
+
+    if (maintenance.length === 0) {
+      container.innerHTML = `
+        <div class="card text-center">
+          <div class="mb-4">🔧</div>
+          <h3>등록된 정비 기록이 없습니다</h3>
+          <p class="text-gray-600 mb-4">첫 번째 정비 기록을 등록해보세요.</p>
+          <button class="btn btn-success" onclick="showAddMaintenanceModal()">
+            정비 기록하기
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = maintenance.map(m => `
+      <div class="maintenance-card card mb-4">
+        <div class="maintenance-header">
+          <div class="maintenance-info">
+            <h3>${m.vehiclePlate} - ${m.maintenanceType}</h3>
+            <p class="maintenance-date">${formatDate(m.maintenanceDate)}</p>
+          </div>
+          <div class="maintenance-cost">
+            <span class="cost-amount">$${m.cost || 0}</span>
+          </div>
+        </div>
+        <div class="maintenance-details">
+          <div class="detail-row">
+            <span class="detail-label">정비 유형:</span>
+            <span class="detail-value">${m.maintenanceType}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">정비소:</span>
+            <span class="detail-value">${m.garageName || '정보 없음'}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">주행거리:</span>
+            <span class="detail-value">${m.odometerReading ? m.odometerReading + 'km' : '정보 없음'}</span>
+          </div>
+        </div>
+        <div class="maintenance-actions">
+          <button class="btn btn-sm btn-primary" onclick="viewMaintenanceDetails('${m.id}')">
+            👁️ 상세보기
+          </button>
+          <button class="btn btn-sm btn-secondary" onclick="editMaintenance('${m.id}')">
+            ✏️ 수정
+          </button>
+          <button class="btn btn-sm btn-error" onclick="deleteMaintenance('${m.id}')">
+            🗑️ 삭제
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // 정비 통계 업데이트
+  function updateMaintenanceStats() {
+    const total = maintenance.length;
+    const thisYear = maintenance.filter(m => {
+      const maintenanceYear = new Date(m.maintenanceDate).getFullYear();
+      return maintenanceYear === new Date().getFullYear();
+    }).length;
+    const upcoming = maintenance.filter(m => {
+      const nextDate = m.nextMaintenanceDate;
+      if (!nextDate) return false;
+      const next = new Date(nextDate);
+      const today = new Date();
+      return next > today && next - today <= 30 * 24 * 60 * 60 * 1000;
+    }).length;
+    const totalCost = maintenance.reduce((sum, m) => sum + (parseFloat(m.cost) || 0), 0);
+
+    document.getElementById('total-maintenance').textContent = total;
+    document.getElementById('this-year').textContent = thisYear;
+    document.getElementById('upcoming').textContent = upcoming;
+    document.getElementById('total-cost').textContent = `$${totalCost.toFixed(0)}`;
+  }
+
+  // 정비 일정 렌더링
+  function renderMaintenanceSchedule() {
+    const container = document.getElementById('maintenance-schedule-container');
+    if (!container) return;
+
+    const upcomingMaintenance = maintenance.filter(m => {
+      const nextDate = m.nextMaintenanceDate;
+      if (!nextDate) return false;
+      const next = new Date(nextDate);
+      const today = new Date();
+      return next > today;
+    }).sort((a, b) => new Date(a.nextMaintenanceDate) - new Date(b.nextMaintenanceDate));
+
+    if (upcomingMaintenance.length === 0) {
+      container.innerHTML = `
+        <div class="card text-center">
+          <div class="mb-4">✅</div>
+          <h3>예정된 정비가 없습니다</h3>
+          <p class="text-gray-600">모든 정비가 완료되었습니다!</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = upcomingMaintenance.map(m => {
+      const nextDate = new Date(m.nextMaintenanceDate);
+      const today = new Date();
+      const daysUntil = Math.ceil((nextDate - today) / (1000 * 60 * 60 * 24));
+      
+      let urgencyClass = 'status-ok';
+      if (daysUntil <= 7) urgencyClass = 'status-error';
+      else if (daysUntil <= 30) urgencyClass = 'status-warning';
+
+      return `
+        <div class="schedule-card card mb-3">
+          <div class="schedule-content">
+            <div class="schedule-info">
+              <div class="schedule-title">${m.vehiclePlate} - ${m.maintenanceType}</div>
+              <div class="schedule-date">${formatDate(m.nextMaintenanceDate)} (${daysUntil}일 후)</div>
+            </div>
+            <div class="schedule-status">
+              <span class="status-badge ${urgencyClass}">
+                ${daysUntil <= 7 ? '긴급' : daysUntil <= 30 ? '예정' : '정상'}
+              </span>
+            </div>
+            <div class="schedule-actions">
+              <button class="btn btn-sm btn-success" onclick="markMaintenanceComplete('${m.id}')">
+                완료
+              </button>
+              <button class="btn btn-sm btn-secondary" onclick="rescheduleMaintenance('${m.id}')">
+                연기
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // 빠른 정비 기록
+  function quickMaintenance(type) {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>🔧 ${type} 기록</h2>
+          <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="quick-maintenance-form">
+            <div class="form-group">
+              <label for="quick-vehicle" class="form-label">차량 선택 *</label>
+              <select id="quick-vehicle" class="form-input" required>
+                <option value="">차량 선택</option>
+                ${vehicles.map(v => `<option value="${v.plateNumber}">${v.plateNumber} - ${v.make} ${v.model}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="quick-date" class="form-label">정비 날짜 *</label>
+              <input type="date" id="quick-date" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label for="quick-cost" class="form-label">정비 비용</label>
+              <input type="number" id="quick-cost" class="form-input" placeholder="0" min="0" step="0.01">
+            </div>
+            <div class="form-group">
+              <label for="quick-notes" class="form-label">메모</label>
+              <textarea id="quick-notes" class="form-textarea" placeholder="정비 내용을 간단히 기록하세요..."></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+          <button class="btn btn-success" onclick="saveQuickMaintenance('${type}')">
+            <span class="loading hidden"></span>
+            저장하기
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+
+  // 빠른 정비 저장
+  function saveQuickMaintenance(type) {
+    const maintenanceData = {
+      vehiclePlate: document.getElementById('quick-vehicle').value,
+      maintenanceType: type,
+      maintenanceDate: document.getElementById('quick-date').value,
+      cost: document.getElementById('quick-cost').value,
+      notes: document.getElementById('quick-notes').value,
+      status: 'completed'
+    };
+
+    if (!maintenanceData.vehiclePlate || !maintenanceData.maintenanceDate) {
+      showAlert('필수 항목을 모두 입력해주세요.', 'error');
+      return;
+    }
+
+    const button = document.querySelector('.modal-footer .btn-success');
+    const loading = button.querySelector('.loading');
+    
+    button.disabled = true;
+    loading.classList.remove('hidden');
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (result.success) {
+          showAlert('정비 기록이 저장되었습니다! 🔧', 'success');
+          closeModal();
+          loadMaintenance();
+        } else {
+          showAlert(result.message, 'error');
+        }
+      })
+      .withFailureHandler(function(error) {
+        showAlert('저장에 실패했습니다.', 'error');
+      })
+      .withFinally(function() {
+        button.disabled = false;
+        loading.classList.add('hidden');
+      })
+      .saveMaintenance(maintenanceData);
+  }
+
+  // 새 정비 기록 모달 표시
+  function showAddMaintenanceModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h2>🔧 새 정비 기록</h2>
+          <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="maintenance-form">
+            <div class="form-section">
+              <h3>🚗 차량 정보</h3>
+              <div class="grid grid-2">
+                <div class="form-group">
+                  <label for="vehiclePlate" class="form-label">차량 번호판 *</label>
+                  <select id="vehiclePlate" class="form-input" required>
+                    <option value="">차량 선택</option>
+                    ${vehicles.map(v => `<option value="${v.plateNumber}">${v.plateNumber} - ${v.make} ${v.model}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="maintenanceDate" class="form-label">정비 날짜 *</label>
+                  <input type="date" id="maintenanceDate" class="form-input" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>🔧 정비 정보</h3>
+              <div class="grid grid-2">
+                <div class="form-group">
+                  <label for="maintenanceType" class="form-label">정비 유형 *</label>
+                  <select id="maintenanceType" class="form-input" required>
+                    <option value="">정비 유형 선택</option>
+                    <option value="오일교환">오일 교환</option>
+                    <option value="타이어교체">타이어 교체</option>
+                    <option value="브레이크점검">브레이크 점검</option>
+                    <option value="배터리점검">배터리 점검</option>
+                    <option value="에어컨점검">에어컨 점검</option>
+                    <option value="정기점검">정기 점검</option>
+                    <option value="기타">기타</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="cost" class="form-label">정비 비용</label>
+                  <input type="number" id="cost" class="form-input" placeholder="0" min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                  <label for="odometerReading" class="form-label">주행거리 (km)</label>
+                  <input type="number" id="odometerReading" class="form-input" placeholder="0" min="0">
+                </div>
+                <div class="form-group">
+                  <label for="nextMaintenanceDate" class="form-label">다음 정비 예정일</label>
+                  <input type="date" id="nextMaintenanceDate" class="form-input">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="description" class="form-label">정비 상세 내용</label>
+                <textarea id="description" class="form-textarea" placeholder="정비 내용을 자세히 기록하세요..."></textarea>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>🏢 정비소 정보</h3>
+              <div class="grid grid-2">
+                <div class="form-group">
+                  <label for="garageName" class="form-label">정비소명</label>
+                  <input type="text" id="garageName" class="form-input" placeholder="정비소 이름">
+                </div>
+                <div class="form-group">
+                  <label for="garagePhone" class="form-label">정비소 연락처</label>
+                  <input type="tel" id="garagePhone" class="form-input" placeholder="전화번호">
+                </div>
+                <div class="form-group">
+                  <label for="garageAddress" class="form-label">정비소 주소</label>
+                  <input type="text" id="garageAddress" class="form-input" placeholder="주소">
+                </div>
+                <div class="form-group">
+                  <label for="mechanicName" class="form-label">정비사 이름</label>
+                  <input type="text" id="mechanicName" class="form-input" placeholder="정비사 이름">
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>📸 사진 업로드</h3>
+              <div class="photo-upload-grid">
+                <div class="photo-upload-item">
+                  <label for="beforePhoto" class="photo-upload-label">
+                    <div class="photo-upload-box">
+                      <span>📷</span>
+                      <p>정비 전 사진</p>
+                    </div>
+                  </label>
+                  <input type="file" id="beforePhoto" class="photo-upload-input" accept="image/*" onchange="previewImage(this, 'beforePreview')">
+                  <div id="beforePreview" class="photo-preview"></div>
+                </div>
+                <div class="photo-upload-item">
+                  <label for="afterPhoto" class="photo-upload-label">
+                    <div class="photo-upload-box">
+                      <span>📸</span>
+                      <p>정비 후 사진</p>
+                    </div>
+                  </label>
+                  <input type="file" id="afterPhoto" class="photo-upload-input" accept="image/*" onchange="previewImage(this, 'afterPreview')">
+                  <div id="afterPreview" class="photo-preview"></div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+          <button class="btn btn-success" onclick="saveMaintenance()">
+            <span class="loading hidden"></span>
+            정비 기록 저장
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+
+  // 정비 기록 저장
+  function saveMaintenance() {
+    const maintenanceData = {
+      vehiclePlate: document.getElementById('vehiclePlate').value,
+      maintenanceDate: document.getElementById('maintenanceDate').value,
+      maintenanceType: document.getElementById('maintenanceType').value,
+      cost: document.getElementById('cost').value,
+      odometerReading: document.getElementById('odometerReading').value,
+      nextMaintenanceDate: document.getElementById('nextMaintenanceDate').value,
+      description: document.getElementById('description').value,
+      garageName: document.getElementById('garageName').value,
+      garagePhone: document.getElementById('garagePhone').value,
+      garageAddress: document.getElementById('garageAddress').value,
+      mechanicName: document.getElementById('mechanicName').value,
+      status: 'completed',
+      photos: {
+        before: document.getElementById('beforePhoto').files[0],
+        after: document.getElementById('afterPhoto').files[0]
+      }
+    };
+
+    if (!maintenanceData.vehiclePlate || !maintenanceData.maintenanceDate || !maintenanceData.maintenanceType) {
+      showAlert('필수 항목을 모두 입력해주세요.', 'error');
+      return;
+    }
+
+    const button = document.querySelector('.modal-footer .btn-success');
+    const loading = button.querySelector('.loading');
+    
+    button.disabled = true;
+    loading.classList.remove('hidden');
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (result.success) {
+          showAlert('정비 기록이 저장되었습니다! 🔧', 'success');
+          closeModal();
+          loadMaintenance();
+        } else {
+          showAlert(result.message, 'error');
+        }
+      })
+      .withFailureHandler(function(error) {
+        showAlert('저장에 실패했습니다.', 'error');
+      })
+      .withFinally(function() {
+        button.disabled = false;
+        loading.classList.add('hidden');
+      })
+      .saveMaintenance(maintenanceData);
+  }
+
+  // 정비 완료 표시
+  function markMaintenanceComplete(maintenanceId) {
+    if (confirm('이 정비를 완료로 표시하시겠습니까?')) {
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (result.success) {
+            showAlert('정비가 완료로 표시되었습니다.', 'success');
+            loadMaintenance();
+          } else {
+            showAlert(result.message, 'error');
+          }
+        })
+        .withFailureHandler(function(error) {
+          showAlert('처리에 실패했습니다.', 'error');
+        })
+        .markMaintenanceComplete(maintenanceId);
+    }
+  }
+
+  // 정비 일정 연기
+  function rescheduleMaintenance(maintenanceId) {
+    const newDate = prompt('새로운 정비 날짜를 입력하세요 (YYYY-MM-DD):');
+    if (newDate) {
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (result.success) {
+            showAlert('정비 일정이 연기되었습니다.', 'success');
+            loadMaintenance();
+          } else {
+            showAlert(result.message, 'error');
+          }
+        })
+        .withFailureHandler(function(error) {
+          showAlert('처리에 실패했습니다.', 'error');
+        })
+        .rescheduleMaintenance(maintenanceId, newDate);
+    }
+  }
+
+  // 페이지 로드 시 정비 목록 로드
+  document.addEventListener('DOMContentLoaded', function() {
+    loadMaintenance();
+  });
+  </script>
+
+  <style>
+  /* Maintenance Cards */
+  .maintenance-card {
+    border-left: 4px solid var(--success);
+  }
+
+  .maintenance-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
+
+  .maintenance-info h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 0.25rem;
+  }
+
+  .maintenance-date {
+    color: var(--gray-600);
+    font-size: 0.875rem;
+  }
+
+  .maintenance-cost {
+    text-align: right;
+  }
+
+  .cost-amount {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--success);
+  }
+
+  .maintenance-details {
+    margin-bottom: 1rem;
+  }
+
+  .maintenance-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  /* Schedule Cards */
+  .schedule-card {
+    border-left: 4px solid var(--warning);
+  }
+
+  .schedule-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .schedule-title {
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 0.25rem;
+  }
+
+  .schedule-date {
+    color: var(--gray-600);
+    font-size: 0.875rem;
+  }
+
+  .schedule-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  /* Quick Action Cards */
+  .quick-action-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .quick-action-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .quick-action-card h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--gray-800);
+  }
+
+  .quick-action-card p {
+    color: var(--gray-600);
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+  }
+
+  /* Schedule Actions */
+  .schedule-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .maintenance-header {
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .maintenance-actions {
+      justify-content: center;
+    }
+
+    .schedule-content {
+      flex-direction: column;
+      text-align: center;
+      gap: 1rem;
+    }
+
+    .schedule-actions {
+      justify-content: center;
+    }
+
+    .quick-action-card {
+      padding: 1.5rem 1rem;
+    }
+  }
+  </style>
+</body>
+</html> 

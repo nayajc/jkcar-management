@@ -1,0 +1,741 @@
+<script type="module">
+// Firebase SDK 임포트
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+import { getDatabase, ref, set, get, push, update, remove } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-storage.js";
+
+// Firebase 설정
+const firebaseConfig = {
+  apiKey: "AIzaSyA-BYaIUXgk8szUEuwdmqf8xXdzr8Ss2cs",
+  authDomain: "jkcar-management.firebaseapp.com",
+  databaseURL: "https://jkcar-management-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "jkcar-management",
+  storageBucket: "jkcar-management.firebasestorage.app",
+  messagingSenderId: "158717054066",
+  appId: "1:158717054066:web:c42faad070cde9911d06eb",
+  measurementId: "G-3WRFDYEP1T"
+};
+
+// Firebase 초기화
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
+const storage = getStorage(app);
+
+// 전역 변수
+let currentUser = null;
+let vehicles = [];
+let accidents = [];
+let maintenance = [];
+
+// Firebase 초기화
+function initializeFirebase() {
+  console.log('Firebase 초기화됨');
+  
+  // 인증 상태 변경 감지
+  auth.onAuthStateChanged(function(user) {
+    if (user) {
+      currentUser = user;
+      console.log('사용자 로그인:', user.email);
+      loadUserProfile();
+    } else {
+      console.log('사용자 로그아웃');
+      currentUser = null;
+      // 로그인 페이지로 리다이렉트
+      if (window.location.search.indexOf('page=login') === -1) {
+        window.location.href = '?page=login';
+      }
+    }
+  });
+}
+
+// 사용자 인증 상태 확인
+function checkAuthStatus() {
+  // Firebase Auth를 통해 사용자 정보 확인
+  if (auth.currentUser) {
+    currentUser = auth.currentUser;
+    loadUserProfile();
+  } else {
+    // 로그인 페이지로 리다이렉트
+    window.location.href = '?page=login';
+  }
+}
+
+// 사용자 프로필 로드
+async function loadUserProfile() {
+  if (!currentUser) return;
+  
+  try {
+    const userRef = ref(db, `users/${currentUser.uid}`);
+    const snapshot = await get(userRef);
+    
+    if (snapshot.exists()) {
+      const profile = snapshot.val();
+      updateProfileUI(profile);
+    } else {
+      // 최초 접속시 별명 입력 모달 표시
+      showNicknameModal();
+    }
+  } catch (error) {
+    console.error('프로필 로드 실패:', error);
+  }
+}
+
+// 별명 입력 모달 표시
+function showNicknameModal() {
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>🎉 환영합니다!</h2>
+        <p>JKCar Management 앱을 사용하기 위해 별명을 입력해주세요.</p>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="nickname" class="form-label">별명</label>
+          <input type="text" id="nickname" class="form-input" placeholder="예: 차량관리왕" maxlength="20">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="saveNickname()">
+          <span class="loading hidden"></span>
+          저장하기
+        </button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+// 별명 저장
+async function saveNickname() {
+  const nickname = document.getElementById('nickname').value.trim();
+  if (!nickname) {
+    showAlert('별명을 입력해주세요.', 'error');
+    return;
+  }
+
+  const button = document.querySelector('.modal-footer .btn');
+  const loading = button.querySelector('.loading');
+  
+  button.disabled = true;
+  loading.classList.remove('hidden');
+
+  try {
+    const userData = {
+      email: currentUser.email,
+      nickname: nickname,
+      createdAt: new Date().toISOString(),
+      lastLogin: new Date().toISOString()
+    };
+
+    const userRef = ref(db, `users/${currentUser.uid}`);
+    await set(userRef, userData);
+    
+    showAlert('프로필이 저장되었습니다! 🎉', 'success');
+    document.querySelector('.modal-overlay').remove();
+    loadUserProfile();
+  } catch (error) {
+    console.error('프로필 저장 실패:', error);
+    showAlert('저장에 실패했습니다.', 'error');
+  } finally {
+    button.disabled = false;
+    loading.classList.add('hidden');
+  }
+}
+
+// 프로필 UI 업데이트
+function updateProfileUI(profile) {
+  const profileElements = document.querySelectorAll('.user-nickname');
+  profileElements.forEach(element => {
+    element.textContent = profile.nickname;
+  });
+}
+
+// 차량 목록 로드
+async function loadVehicles() {
+  if (!currentUser) return;
+  
+  try {
+    const vehiclesRef = ref(db, `vehicles/${currentUser.uid}`);
+    const snapshot = await get(vehiclesRef);
+    
+    if (snapshot.exists()) {
+      vehicles = Object.values(snapshot.val());
+    } else {
+      vehicles = [];
+    }
+    
+    renderVehicles();
+    updateDashboardStats();
+  } catch (error) {
+    console.error('차량 목록 로드 실패:', error);
+    showAlert('차량 목록을 불러오는데 실패했습니다.', 'error');
+  }
+}
+
+// 차량 목록 렌더링
+function renderVehicles() {
+  const container = document.getElementById('vehicles-container');
+  if (!container) return;
+
+  if (vehicles.length === 0) {
+    container.innerHTML = `
+      <div class="card text-center">
+        <div class="mb-4">🚗</div>
+        <h3>등록된 차량이 없습니다</h3>
+        <p class="text-gray-600 mb-4">첫 번째 차량을 등록해보세요!</p>
+        <button class="btn btn-primary" onclick="showAddVehicleModal()">
+          차량 등록하기
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = vehicles.map(vehicle => `
+    <div class="vehicle-card fade-in">
+      <div class="vehicle-image">
+        🚗
+      </div>
+      <div class="vehicle-info">
+        <div class="vehicle-plate">${vehicle.plateNumber}</div>
+        <div class="vehicle-details">
+          <div>${vehicle.make} ${vehicle.model} (${vehicle.year})</div>
+          <div>${vehicle.color} • ${vehicle.fuelType}</div>
+        </div>
+        <div class="vehicle-status">
+          ${getExpiryStatus(vehicle.regoExpiry, 'Rego')}
+          ${getExpiryStatus(vehicle.insuranceExpiry, '보험')}
+          ${getExpiryStatus(vehicle.greenSlipExpiry, 'Green Slip')}
+        </div>
+        <div class="mt-4 flex gap-2">
+          <button class="btn btn-sm btn-secondary" onclick="editVehicle('${vehicle.id}')">
+            수정
+          </button>
+          <button class="btn btn-sm btn-error" onclick="deleteVehicle('${vehicle.id}')">
+            삭제
+          </button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// 만료일 상태 확인
+function getExpiryStatus(expiryDate, label) {
+  if (!expiryDate) return '';
+  
+  const today = new Date();
+  const expiry = new Date(expiryDate);
+  const daysUntilExpiry = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+  
+  let statusClass = 'status-ok';
+  let statusText = `${label} 정상`;
+  
+  if (daysUntilExpiry <= 0) {
+    statusClass = 'status-error';
+    statusText = `${label} 만료`;
+  } else if (daysUntilExpiry <= 30) {
+    statusClass = 'status-warning';
+    statusText = `${label} ${daysUntilExpiry}일`;
+  }
+  
+  return `<span class="status-badge ${statusClass}">${statusText}</span>`;
+}
+
+// 차량 등록 모달 표시
+function showAddVehicleModal() {
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>🚗 새 차량 등록</h2>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="vehicle-form">
+          <div class="grid grid-2">
+            <div class="form-group">
+              <label for="plateNumber" class="form-label">번호판 *</label>
+              <input type="text" id="plateNumber" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label for="make" class="form-label">제조사 *</label>
+              <input type="text" id="make" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label for="model" class="form-label">모델 *</label>
+              <input type="text" id="model" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label for="year" class="form-label">연도 *</label>
+              <input type="number" id="year" class="form-input" min="1900" max="2030" required>
+            </div>
+            <div class="form-group">
+              <label for="color" class="form-label">색상</label>
+              <input type="text" id="color" class="form-input">
+            </div>
+            <div class="form-group">
+              <label for="fuelType" class="form-label">연료 타입</label>
+              <select id="fuelType" class="form-input">
+                <option value="Petrol">Petrol</option>
+                <option value="Diesel">Diesel</option>
+                <option value="Electric">Electric</option>
+                <option value="Hybrid">Hybrid</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="regoExpiry" class="form-label">Rego 만료일</label>
+              <input type="date" id="regoExpiry" class="form-input">
+            </div>
+            <div class="form-group">
+              <label for="insuranceExpiry" class="form-label">보험 만료일</label>
+              <input type="date" id="insuranceExpiry" class="form-input">
+            </div>
+            <div class="form-group">
+              <label for="greenSlipExpiry" class="form-label">Green Slip 만료일</label>
+              <input type="date" id="greenSlipExpiry" class="form-input">
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+        <button class="btn btn-primary" onclick="saveVehicle()">
+          <span class="loading hidden"></span>
+          저장하기
+        </button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+// 차량 저장
+async function saveVehicle() {
+  const vehicleData = {
+    plateNumber: document.getElementById('plateNumber').value,
+    make: document.getElementById('make').value,
+    model: document.getElementById('model').value,
+    year: document.getElementById('year').value,
+    color: document.getElementById('color').value,
+    fuelType: document.getElementById('fuelType').value,
+    regoExpiry: document.getElementById('regoExpiry').value,
+    insuranceExpiry: document.getElementById('insuranceExpiry').value,
+    greenSlipExpiry: document.getElementById('greenSlipExpiry').value
+  };
+
+  if (!vehicleData.plateNumber || !vehicleData.make || !vehicleData.model || !vehicleData.year) {
+    showAlert('필수 항목을 모두 입력해주세요.', 'error');
+    return;
+  }
+
+  const button = document.querySelector('.modal-footer .btn-primary');
+  const loading = button.querySelector('.loading');
+  
+  button.disabled = true;
+  loading.classList.remove('hidden');
+
+  try {
+    vehicleData.userId = currentUser.uid;
+    vehicleData.createdAt = new Date().toISOString();
+    vehicleData.id = crypto.randomUUID();
+
+    const vehicleRef = ref(db, `vehicles/${currentUser.uid}/${vehicleData.id}`);
+    await set(vehicleRef, vehicleData);
+    
+    showAlert('차량이 등록되었습니다! 🚗', 'success');
+    closeModal();
+    loadVehicles();
+  } catch (error) {
+    console.error('차량 저장 실패:', error);
+    showAlert('저장에 실패했습니다.', 'error');
+  } finally {
+    button.disabled = false;
+    loading.classList.add('hidden');
+  }
+}
+
+// 사고 기록 저장
+async function saveAccident(accidentData) {
+  try {
+    accidentData.userId = currentUser.uid;
+    accidentData.createdAt = new Date().toISOString();
+    accidentData.id = crypto.randomUUID();
+
+    const accidentRef = ref(db, `accidents/${currentUser.uid}/${accidentData.id}`);
+    await set(accidentRef, accidentData);
+    
+    showAlert('사고 기록이 저장되었습니다! 📝', 'success');
+    closeModal();
+    loadAccidents();
+  } catch (error) {
+    console.error('사고 기록 저장 실패:', error);
+    showAlert('저장에 실패했습니다.', 'error');
+  }
+}
+
+// 정비 기록 저장
+async function saveMaintenance(maintenanceData) {
+  try {
+    maintenanceData.userId = currentUser.uid;
+    maintenanceData.createdAt = new Date().toISOString();
+    maintenanceData.id = crypto.randomUUID();
+
+    const maintenanceRef = ref(db, `maintenance/${currentUser.uid}/${maintenanceData.id}`);
+    await set(maintenanceRef, maintenanceData);
+    
+    showAlert('정비 기록이 저장되었습니다! 🔧', 'success');
+    closeModal();
+    loadMaintenance();
+  } catch (error) {
+    console.error('정비 기록 저장 실패:', error);
+    showAlert('저장에 실패했습니다.', 'error');
+  }
+}
+
+// 대시보드 통계 업데이트
+function updateDashboardStats() {
+  const totalVehicles = vehicles.length;
+  const expiringSoon = vehicles.filter(vehicle => {
+    const today = new Date();
+    const regoExpiry = vehicle.regoExpiry ? new Date(vehicle.regoExpiry) : null;
+    const insuranceExpiry = vehicle.insuranceExpiry ? new Date(vehicle.insuranceExpiry) : null;
+    const greenSlipExpiry = vehicle.greenSlipExpiry ? new Date(vehicle.greenSlipExpiry) : null;
+    
+    return (regoExpiry && regoExpiry - today <= 30 * 24 * 60 * 60 * 1000) ||
+           (insuranceExpiry && insuranceExpiry - today <= 30 * 24 * 60 * 60 * 1000) ||
+           (greenSlipExpiry && greenSlipExpiry - today <= 30 * 24 * 60 * 60 * 1000);
+  }).length;
+
+  // 통계 카드 업데이트
+  const statsContainer = document.getElementById('dashboard-stats');
+  if (statsContainer) {
+    statsContainer.innerHTML = `
+      <div class="stats-card">
+        <div class="stats-number">${totalVehicles}</div>
+        <div class="stats-label">등록된 차량</div>
+      </div>
+      <div class="stats-card">
+        <div class="stats-number">${expiringSoon}</div>
+        <div class="stats-label">만료 예정</div>
+      </div>
+      <div class="stats-card">
+        <div class="stats-number">${accidents.length}</div>
+        <div class="stats-label">사고 기록</div>
+      </div>
+      <div class="stats-card">
+        <div class="stats-number">${maintenance.length}</div>
+        <div class="stats-label">정비 기록</div>
+      </div>
+    `;
+  }
+}
+
+// 알림 메시지 표시
+function showAlert(message, type = 'info') {
+  const alert = document.createElement('div');
+  alert.className = `alert alert-${type} fade-in`;
+  alert.innerHTML = `
+    <span>${type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️'}</span>
+    <span>${message}</span>
+    <button onclick="this.parentElement.remove()" style="margin-left: auto; background: none; border: none; cursor: pointer;">&times;</button>
+  `;
+  
+  // 기존 알림 제거
+  const existingAlerts = document.querySelectorAll('.alert');
+  existingAlerts.forEach(alert => alert.remove());
+  
+  document.body.insertBefore(alert, document.body.firstChild);
+  
+  // 5초 후 자동 제거
+  setTimeout(() => {
+    if (alert.parentElement) {
+      alert.remove();
+    }
+  }, 5000);
+}
+
+// 모달 닫기
+function closeModal() {
+  const modal = document.querySelector('.modal-overlay');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+// 모바일 메뉴 토글
+function toggleMobileMenu() {
+  const nav = document.querySelector('.nav');
+  nav.classList.toggle('mobile-nav-open');
+}
+
+// 페이지 로드 시 초기화
+document.addEventListener('DOMContentLoaded', function() {
+  // Firebase 초기화
+  initializeFirebase();
+  
+  // 인증 상태 확인
+  checkAuthStatus();
+  
+  // 현재 페이지에 따른 초기화
+  const currentPage = new URLSearchParams(window.location.search).get('page') || 'home';
+  
+  switch(currentPage) {
+    case 'dashboard':
+      loadVehicles();
+      break;
+    case 'vehicles':
+      loadVehicles();
+      break;
+    case 'accidents':
+      loadAccidents();
+      break;
+    case 'maintenance':
+      loadMaintenance();
+      break;
+  }
+  
+  // 모바일 메뉴 이벤트
+  const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+  if (mobileMenuBtn) {
+    mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+  }
+  
+  // 모달 외부 클릭 시 닫기
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('modal-overlay')) {
+      closeModal();
+    }
+  });
+});
+
+// 유틸리티 함수들
+function formatDate(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('ko-KR');
+}
+
+function formatCurrency(amount) {
+  return new Intl.NumberFormat('ko-KR', {
+    style: 'currency',
+    currency: 'AUD'
+  }).format(amount);
+}
+
+// Firebase Storage를 사용한 이미지 업로드
+async function handleImageUpload(file, callback) {
+  try {
+    const fileName = `${currentUser.uid}/${Date.now()}_${file.name}`;
+    const imageRef = storageRef(storage, `images/${fileName}`);
+    
+    const snapshot = await uploadBytes(imageRef, file);
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    
+    callback(downloadURL);
+  } catch (error) {
+    console.error('이미지 업로드 실패:', error);
+    // 실패시 기존 방식으로 fallback
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      callback(e.target.result);
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+// Google 로그인
+async function signInWithGoogle() {
+  try {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    console.log('Google 로그인 성공:', result.user);
+  } catch (error) {
+    console.error('Google 로그인 실패:', error);
+    showAlert('로그인에 실패했습니다.', 'error');
+  }
+}
+
+// 로그아웃
+async function signOut() {
+  try {
+    await auth.signOut();
+    console.log('로그아웃 성공');
+  } catch (error) {
+    console.error('로그아웃 실패:', error);
+  }
+}
+
+// 사고 목록 로드
+async function loadAccidents() {
+  if (!currentUser) return;
+  
+  try {
+    const accidentsRef = ref(db, `accidents/${currentUser.uid}`);
+    const snapshot = await get(accidentsRef);
+    
+    if (snapshot.exists()) {
+      accidents = Object.values(snapshot.val());
+    } else {
+      accidents = [];
+    }
+    
+    renderAccidents();
+  } catch (error) {
+    console.error('사고 목록 로드 실패:', error);
+    showAlert('사고 목록을 불러오는데 실패했습니다.', 'error');
+  }
+}
+
+// 정비 목록 로드
+async function loadMaintenance() {
+  if (!currentUser) return;
+  
+  try {
+    const maintenanceRef = ref(db, `maintenance/${currentUser.uid}`);
+    const snapshot = await get(maintenanceRef);
+    
+    if (snapshot.exists()) {
+      maintenance = Object.values(snapshot.val());
+    } else {
+      maintenance = [];
+    }
+    
+    renderMaintenance();
+  } catch (error) {
+    console.error('정비 목록 로드 실패:', error);
+    showAlert('정비 목록을 불러오는데 실패했습니다.', 'error');
+  }
+}
+
+// 차량 삭제
+async function deleteVehicle(vehicleId) {
+  if (!confirm('정말로 이 차량을 삭제하시겠습니까?')) return;
+  
+  try {
+    const vehicleRef = ref(db, `vehicles/${currentUser.uid}/${vehicleId}`);
+    await remove(vehicleRef);
+    
+    showAlert('차량이 삭제되었습니다.', 'success');
+    loadVehicles();
+  } catch (error) {
+    console.error('차량 삭제 실패:', error);
+    showAlert('삭제에 실패했습니다.', 'error');
+  }
+}
+
+// 차량 수정
+async function editVehicle(vehicleId) {
+  const vehicle = vehicles.find(v => v.id === vehicleId);
+  if (!vehicle) return;
+  
+  // 수정 모달 표시 (기존 등록 모달과 유사)
+  showEditVehicleModal(vehicle);
+}
+
+// 사고 목록 렌더링
+function renderAccidents() {
+  const container = document.getElementById('accidents-container');
+  if (!container) return;
+
+  if (accidents.length === 0) {
+    container.innerHTML = `
+      <div class="card text-center">
+        <div class="mb-4">📝</div>
+        <h3>등록된 사고 기록이 없습니다</h3>
+        <p class="text-gray-600 mb-4">사고가 발생했을 때 기록해보세요!</p>
+        <button class="btn btn-primary" onclick="showAddAccidentModal()">
+          사고 기록하기
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = accidents.map(accident => `
+    <div class="accident-card fade-in">
+      <div class="accident-header">
+        <h3>${accident.vehiclePlate} - ${formatDate(accident.accidentDate)}</h3>
+        <span class="status-badge ${accident.status === '처리완료' ? 'status-ok' : 'status-warning'}">
+          ${accident.status}
+        </span>
+      </div>
+      <div class="accident-details">
+        <p><strong>사고 유형:</strong> ${accident.accidentType}</p>
+        <p><strong>사고 장소:</strong> ${accident.location}</p>
+        <p><strong>상대방:</strong> ${accident.otherParty}</p>
+        <p><strong>보험사:</strong> ${accident.insurance}</p>
+      </div>
+    </div>
+  `).join('');
+}
+
+// 정비 목록 렌더링
+function renderMaintenance() {
+  const container = document.getElementById('maintenance-container');
+  if (!container) return;
+
+  if (maintenance.length === 0) {
+    container.innerHTML = `
+      <div class="card text-center">
+        <div class="mb-4">🔧</div>
+        <h3>등록된 정비 기록이 없습니다</h3>
+        <p class="text-gray-600 mb-4">정비 일정을 관리해보세요!</p>
+        <button class="btn btn-primary" onclick="showAddMaintenanceModal()">
+          정비 기록하기
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = maintenance.map(item => `
+    <div class="maintenance-card fade-in">
+      <div class="maintenance-header">
+        <h3>${item.vehiclePlate} - ${item.serviceType}</h3>
+        <span class="status-badge ${item.status === '완료' ? 'status-ok' : 'status-warning'}">
+          ${item.status}
+        </span>
+      </div>
+      <div class="maintenance-details">
+        <p><strong>정비소:</strong> ${item.garage}</p>
+        <p><strong>정비일:</strong> ${formatDate(item.serviceDate)}</p>
+        <p><strong>비용:</strong> ${formatCurrency(item.cost)}</p>
+        <p><strong>다음 정비:</strong> ${formatDate(item.nextServiceDate)}</p>
+      </div>
+    </div>
+  `).join('');
+}
+
+// 지도 관련 함수 (Google Maps API 사용)
+function initMap() {
+  // Google Maps 초기화 코드
+  console.log('지도 초기화됨');
+}
+
+// 위치 정보 가져오기
+function getCurrentLocation(callback) {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      function(position) {
+        callback({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        });
+      },
+      function(error) {
+        console.error('위치 정보 가져오기 실패:', error);
+        callback(null);
+      }
+    );
+  } else {
+    console.error('Geolocation이 지원되지 않습니다.');
+    callback(null);
+  }
+}
+</script> 
